@@ -91,6 +91,7 @@ namespace MassSpecTriggerCs
         const string OutputDirKey = "Output_Directory";
         const string SourceTrimKey = "Source_Trim";
         const string RemoveFilesKey = "Remove_Files";
+        const string RemoveDirectoriesKey = "Remove_Directories";
         const string UpdateFilesKey = "Overwrite_Older";
         const string MinRawFileSizeKey = "Min_Raw_Files_To_Move_Again";
         const string TriggerLogFileStem = "mass_spec_trigger_log_file";
@@ -98,9 +99,11 @@ namespace MassSpecTriggerCs
         const string TriggerLogFileExtension = "txt";
         const int MinRawFileSize = 100000;
         static bool DefaultRemoveFiles = false;
+        static bool DefaultRemoveDirectories = false;
         static bool DefaultUpdateFiles = false;
         static string DefaultSourceTrim = "Transfer";
         static bool RemoveFiles = DefaultRemoveFiles;
+        static bool RemoveDirectories = DefaultRemoveDirectories;
         static bool UpdateFiles = DefaultUpdateFiles;
         static string SourceTrim = DefaultSourceTrim;
         static Dictionary<string, string> ConfigMap;
@@ -222,6 +225,26 @@ namespace MassSpecTriggerCs
                 string destSubDir = Path.Combine(destDir, dirName);
                 CopyDirectory(subDir, destSubDir, updateFiles);
             }
+        }
+
+        public static void RecursiveRemoveFiles(string sourceDir)
+        {
+            var sourceDirectory = new DirectoryInfo(sourceDir);
+            if (RemoveFiles == true)
+            {
+                foreach (var file in sourceDirectory.GetFiles())
+                {
+                    file.Delete();
+                }
+                if (RemoveDirectories == true)
+                {
+                    foreach (var dir in sourceDirectory.GetDirectories())
+                    {
+                        dir.Delete();
+                    }
+                }
+            }
+
         }
 
         // SLD / Keep track of acquired  logic starts here
@@ -353,6 +376,7 @@ namespace MassSpecTriggerCs
                 }
                 SourceTrim = ConfigMap.TryGetValue(SourceTrimKey, out string sourceTrimPath) ? sourceTrimPath : DefaultSourceTrim;
                 bool.TryParse(ConfigMap.GetValueOrDefault(RemoveFilesKey, DefaultRemoveFiles.ToString()), out RemoveFiles);
+                bool.TryParse(ConfigMap.GetValueOrDefault(RemoveDirectoriesKey, DefaultRemoveDirectories.ToString()), out RemoveDirectories);
                 bool.TryParse(ConfigMap.GetValueOrDefault(UpdateFilesKey, DefaultUpdateFiles.ToString()), out UpdateFiles);
                 int.TryParse(ConfigMap.GetValueOrDefault(MinRawFileSizeKey, MinRawFileSize.ToString()), out int configMinRawFileSize);
                 int minRawFileSize = configMinRawFileSize > 0 ? configMinRawFileSize : MinRawFileSize;
