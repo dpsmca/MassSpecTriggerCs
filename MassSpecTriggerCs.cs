@@ -139,6 +139,11 @@ namespace MassSpecTriggerCs
             {
                 newOutputPath = Path.Combine(outputDir, sourceStr);
             }
+            else if (sourceTrimPos == 0 && sourceStr == sourceTrimPath)
+            {
+                // If source path is identical to trim, just save directly in output directory 
+                newOutputPath = outputDir;
+            }
             else
             {
                 // If string matching contents of sourceTrimPath is found, adjust the substring start position.
