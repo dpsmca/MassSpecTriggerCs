@@ -347,6 +347,22 @@ namespace MassSpecTriggerCs
             return rawFilesAcquired;
         }  // readRawFilesAcquired()
 
+        private static int countRawFilesAcquired(string rawFilesAcquiredPath)
+        {
+            StringOrderedDictionary rawFilesAcquired = readRawFilesAcquired(rawFilesAcquiredPath);
+            int total = rawFilesAcquired.Count;
+            int acquired = 0;
+            foreach (var value in rawFilesAcquired.Values)
+            {
+                var status = value.ToString();
+                if (status == "yes")
+                {
+                    acquired++;
+                }
+            }
+            return acquired;
+        }  // readRawFilesAcquired()
+
         public static void Main(string[] args)
         {
             StreamWriter logFile = null;
@@ -425,15 +441,19 @@ namespace MassSpecTriggerCs
                 Console.WriteLine($"Updated {rawFileName} for acquisition state.");
                 writeRawFilesAcquired(rawFilesAcquiredPath, rawFilesAcquiredDict);
                 // END SLD / Check acquired raw
+
+                int total = rawFilesAcquiredDict.Count;
+                int acquired = countRawFilesAcquired(rawFilesAcquiredPath);
                 
                 // BEG WRITE MSA
                 // BEG MOVE FOLDER
                 if (areAllRawFilesAcquired(rawFilesAcquiredDict))
                 {
                     string destinationPath = ConstructDestinationPath(folderPath, outputPath, SourceTrim);
+                    logFile.WriteLine($"{acquired} / {total} raw files acquired, beginning payload activity ...");
                     if (!PrepareOutputDirectory(destinationPath, logFile, minRawFileSize, RawFilePattern))
                     {
-                        logFile.WriteLine("Could not prepare: " + destinationPath + ". Check this directory. Exiting.");
+                        logFile.WriteLine("Could not prepare destination: \"" + destinationPath + "\". Check this directory. Exiting.");
                         Environment.Exit(1);
                     }
                     logFile.WriteLine("Copying directory: \"" + folderPath + "\" => \"" + destinationPath + "\"");
@@ -467,6 +487,10 @@ namespace MassSpecTriggerCs
                     }
                     logFile.WriteLine("Wrote file: " + msaFilePath);
                     Environment.Exit(0);
+                }
+                else
+                {
+                    logFile.WriteLine($"{acquired} / {total} raw files acquired, not performing payload activities yet");
                 }
                 // END WRITE MSA
             }  // try
