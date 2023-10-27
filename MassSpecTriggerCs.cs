@@ -458,15 +458,17 @@ namespace MassSpecTriggerCs
                     }
                     logFile.WriteLine("Copying directory: \"" + folderPath + "\" => \"" + destinationPath + "\"");
                     CopyDirectory(folderPath, destinationPath, UpdateFiles);
-                    if (RemoveFiles)
-                    {
-                        logFile.WriteLine("Removing source directory: \"" + folderPath + "\"");
-                        Directory.Delete(folderPath, true);
-                    }
-                    else
-                    {
-                        logFile.WriteLine("Config value '" + RemoveFilesKey + "' is not true, not deleting source directory");
-                    }
+                    RecursiveRemoveFiles(folderPath);
+                    // if (RemoveFiles)
+                    // {
+                    //     
+                    //     logFile.WriteLine("Removing source directory: \"" + folderPath + "\"");
+                    //     Directory.Delete(folderPath, true);
+                    // }
+                    // else
+                    // {
+                    //     logFile.WriteLine("Config value '" + RemoveFilesKey + "' is not true, not deleting source directory");
+                    // }
                     // END MOVE FOLDER
                     
                     // write MSAComplete.txt to The Final Destination
