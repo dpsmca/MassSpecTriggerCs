@@ -414,7 +414,7 @@ namespace MassSpecTriggerCs
                 }
                 if (rawFilesAcquiredDict.Count == 0)
                 {
-                    Console.WriteLine("$The raw files acquired internal dictionary is empty. Check {sldFile} and {rawFilesAcquiredPath}");
+                    Console.WriteLine($"The raw files acquired internal dictionary is empty. Check {sldFile} and {rawFilesAcquiredPath}");
                     Environment.Exit(1);
                 }
 
