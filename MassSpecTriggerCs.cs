@@ -243,7 +243,7 @@ namespace MassSpecTriggerCs
             }
             foreach (var sample in sldFile.Samples)
             {
-                // I saw some blamk-named .raw files in a FreeStyle SLD file and will skip these.
+                // I saw some blank-named .raw files in a FreeStyle SLD file and will skip these.
                 if (string.IsNullOrEmpty(sample.RawFileName))
                 {
                     continue;
@@ -324,7 +324,7 @@ namespace MassSpecTriggerCs
             StreamWriter logFile = null;
             if (args.Length < 1)
             {
-                Console.WriteLine("Please pass in the current raw data file via %R from Thermo Fisher triggering.");
+                Console.WriteLine("Please pass in the current raw data file via %R from Xcalibur.");
                 Environment.Exit(1);
             }
             try
