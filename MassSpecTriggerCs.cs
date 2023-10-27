@@ -82,7 +82,7 @@ namespace MassSpecTriggerCs
         }
     }  // StringOrderedDictionary
 
-    class MainClass
+    public static class MainClass
     {
         const string TokenFile = "MSAComplete.txt";
         const string RepeatString = "_RPT";
@@ -107,22 +107,22 @@ namespace MassSpecTriggerCs
         // Trigger each raw file vars
         private const string RAW_FILES_ACQUIRED_BASE = "RawFilesAcquired.txt";
 
-        static bool ContainsCaseInsensitiveSubstring(string str, string substr)
+        public static bool ContainsCaseInsensitiveSubstring(string str, string substr)
         {
             string strLower = str.ToLower();
             string substrLower = substr.ToLower();
             return strLower.Contains(substrLower);
         }
 
-        static string Timestamp(string format)
+        public static string Timestamp(string format)
         {
             DateTime now = DateTime.Now;
             return now.ToString(format);
         }
 
-        static string Timestamp() => Timestamp("yyyy-MM-dd HH:mm:ss");
+        public static string Timestamp() => Timestamp("yyyy-MM-dd HH:mm:ss");
 
-        static string ConstructDestinationPath(string sourceDir, string outputDir, string sourceTrimPath = "")
+        public static string ConstructDestinationPath(string sourceDir, string outputDir, string sourceTrimPath = "")
         {
             string sourceStr = sourceDir.Replace(Path.GetPathRoot(sourceDir), "");
             // Don't trim anything if sourceTrimPath is an empty string
@@ -147,7 +147,7 @@ namespace MassSpecTriggerCs
             return newOutputPath;
         }
 
-        static bool PrepareOutputDirectory(string outputPath, StreamWriter logFile, int minRawFileSize, string filePattern)
+        public static bool PrepareOutputDirectory(string outputPath, StreamWriter logFile, int minRawFileSize, string filePattern)
         {
             if (!Directory.Exists(outputPath))
             {
@@ -165,7 +165,7 @@ namespace MassSpecTriggerCs
             return true;
         }
 
-        static Dictionary<string, string> ReadConfigFile(string execPath, StreamWriter logFile)
+        public static Dictionary<string, string> ReadConfigFile(string execPath, StreamWriter logFile)
         {
             var configMap = new Dictionary<string, string>();
             var execDir = Path.GetDirectoryName(execPath);
@@ -204,7 +204,7 @@ namespace MassSpecTriggerCs
             return configMap;
         }
 
-        static void CopyDirectory(string sourceDir, string destDir, bool updateFiles)
+        public static void CopyDirectory(string sourceDir, string destDir, bool updateFiles)
         {
             if (!Directory.Exists(destDir))
             {
@@ -319,7 +319,7 @@ namespace MassSpecTriggerCs
             return rawFilesAcquired;
         }  // readRawFilesAcquired()
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             StreamWriter logFile = null;
             if (args.Length < 1)
