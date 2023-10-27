@@ -259,7 +259,7 @@ namespace MassSpecTriggerCs
             StringOrderedDictionary rawFilesAcquired = new StringOrderedDictionary();
             // Initialize the SLD file reader
             var sldFile = SequenceFileReaderFactory.ReadFile(sldFilePath);
-            if (sldFile.IsError)
+            if (sldFile is null || sldFile.IsError)
             {
                 Console.WriteLine($"Error opening the SLD file: {sldFilePath}, {sldFile.FileError.ErrorMessage}");
                 return rawFilesAcquired;
