@@ -203,29 +203,30 @@ namespace MassSpecTriggerCs
 
     public static class MainClass
     {
-        const string TokenFile = "MSAComplete.txt";
-        const string RepeatString = "_RPT";
-        const string LinuxEndl = "\n";
-        const string RawFilePattern = ".raw";
-        const string OutputDirKey = "Output_Directory";
-        const string SourceTrimKey = "Source_Trim";
-        const string RemoveFilesKey = "Remove_Files";
-        const string RemoveDirectoriesKey = "Remove_Directories";
-        const string UpdateFilesKey = "Overwrite_Older";
-        const string MinRawFileSizeKey = "Min_Raw_Files_To_Move_Again";
-        const string TriggerLogFileStem = "mass_spec_trigger_log_file";
-        const string DefaultConfigFilename = "MassSpecTrigger.cfg";
-        const string TriggerLogFileExtension = "txt";
-        const int MinRawFileSize = 100000;
-        static bool DefaultRemoveFiles = false;
-        static bool DefaultRemoveDirectories = false;
-        static bool DefaultUpdateFiles = false;
-        static string DefaultSourceTrim = "Transfer";
-        static bool RemoveFiles = DefaultRemoveFiles;
-        static bool RemoveDirectories = DefaultRemoveDirectories;
-        static bool UpdateFiles = DefaultUpdateFiles;
-        static string SourceTrim = DefaultSourceTrim;
-        static Dictionary<string, string> ConfigMap;
+        public const string TokenFile = "MSAComplete.txt";
+        public const string RepeatString = "_RPT";
+        public const string LinuxEndl = "\n";
+        public const string RawFilePattern = ".raw";
+        public const string OutputDirKey = "Output_Directory";
+        public const string SourceTrimKey = "Source_Trim";
+        public const string RemoveFilesKey = "Remove_Files";
+        public const string RemoveDirectoriesKey = "Remove_Directories";
+        public const string UpdateFilesKey = "Overwrite_Older";
+        public const string MinRawFileSizeKey = "Min_Raw_Files_To_Move_Again";
+        public const string TriggerLogFileStem = "mass_spec_trigger_log_file";
+        public const string DefaultConfigFilename = "MassSpecTrigger.cfg";
+        public const string TriggerLogFileExtension = "txt";
+        public static string DefaultSourceTrim = "Transfer";
+        public static bool DefaultRemoveFiles = false;
+        public static bool DefaultRemoveDirectories = false;
+        public static bool DefaultUpdateFiles = false;
+        public const int DefaultMinRawFileSize = 100000;
+        public static string SourceTrim = DefaultSourceTrim;
+        public static bool RemoveFiles = DefaultRemoveFiles;
+        public static bool RemoveDirectories = DefaultRemoveDirectories;
+        public static bool UpdateFiles = DefaultUpdateFiles;
+        public static int MinRawFileSize = DefaultMinRawFileSize;
+        public static StringKeyDictionary ConfigMap;
         // Trigger each raw file vars
         private const string RAW_FILES_ACQUIRED_BASE = "RawFilesAcquired.txt";
 
