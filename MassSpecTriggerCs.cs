@@ -67,6 +67,131 @@ using System.Linq;
 namespace MassSpecTriggerCs
 {
     // to avoid most casting
+    public class StringKeyDictionary : OrderedDictionary, IEnumerable<KeyValuePair<string, object>>
+    {
+        public new object this[string key]
+        {
+            get => base[key];
+            set
+            {
+                ValidateValueType(value);
+                base[key] = value;
+            }
+        }
+
+        public void Add(string key, object value)
+        {
+            ValidateValueType(value);
+            base.Add(key, value);
+        }
+
+        public new void Insert(int index, string key, object value)
+        {
+            ValidateValueType(value);
+            base.Insert(index, key, value);
+        }
+
+        private void ValidateValueType(object value)
+        {
+            if (value is not int && value is not bool && value is not string)
+            {
+                throw new ArgumentException("Value must be of type int, bool, or string.", nameof(value));
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public new IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+        {
+            foreach (DictionaryEntry entry in (IEnumerable)base.GetEnumerator())
+            {
+                if (entry.Key is string && (entry.Value is int || entry.Value is bool || entry.Value is string))
+                {
+                    yield return new KeyValuePair<string, object>((string)entry.Key, entry.Value);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Invalid key or value type detected.");
+                }
+            }
+        }
+
+        public bool TryGetValue(string key, out string outputValue)
+        {
+            if (this.Contains(key))
+            {
+                outputValue = (string)this[key];
+                return true;
+            }
+            else
+            {
+                outputValue = "";
+                return false;
+            }
+        }
+        
+        public object TryGetValue(string key, out int outputValue)
+        {
+            if (this.Contains(key))
+            {
+                outputValue = (int)this[key];
+                return true;
+            }
+            else
+            {
+                outputValue = 0;
+                return false;
+            }
+        }
+    
+        public object TryGetValue(string key, out bool outputValue)
+        {
+            if (this.Contains(key))
+            {
+                outputValue = (bool)this[key];
+                return true;
+            }
+            else
+            {
+                outputValue = false;
+                return false;
+            }
+        }
+
+        public object GetValueOrDefault(string key, object defaultValue)
+        {
+            if (this.Contains(key))
+            {
+                return this[key];
+            }
+            else
+            {
+                return defaultValue;
+            }
+        }
+
+        public string GetValueOrDefault(string key, string defaultValue)
+        {
+            return (string)GetValueOrDefault(key, (object)defaultValue);
+        }
+
+        public int GetValueOrDefault(string key, int defaultValue)
+        {
+            return (int)GetValueOrDefault(key, (object)defaultValue);
+        }
+    
+        public bool GetValueOrDefault(string key, bool defaultValue)
+        {
+            return (bool)GetValueOrDefault(key, (object)defaultValue);
+        }
+    
+
+        // ... Add/override other necessary methods and properties as needed ...
+    }  // StringKeyDictionary
+
     public class StringOrderedDictionary : OrderedDictionary
     {
         public string this[string key]
