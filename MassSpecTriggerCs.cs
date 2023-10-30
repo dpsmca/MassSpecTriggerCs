@@ -582,18 +582,17 @@ namespace MassSpecTriggerCs
                     Environment.Exit(1);
                 }
                 string folderPath = Path.GetDirectoryName(rawFilePath);
-                ConfigMap = ReadConfigFile(logPath, logFile);
+                ConfigMap = ReadAndParseConfigFile(logPath, logFile);
+                SourceTrim = ConfigMap.TryGetValue(SourceTrimKey, out string sourceTrimPath) ? sourceTrimPath : DefaultSourceTrim;
+                RemoveFiles = ConfigMap.GetValueOrDefault(RemoveFilesKey, DefaultRemoveFiles);
+                RemoveDirectories = ConfigMap.GetValueOrDefault(RemoveDirectoriesKey, DefaultRemoveDirectories);
+                UpdateFiles = ConfigMap.GetValueOrDefault(UpdateFilesKey, DefaultUpdateFiles);
+                MinRawFileSize = ConfigMap.GetValueOrDefault(MinRawFileSizeKey, DefaultMinRawFileSize);
                 if (!ConfigMap.TryGetValue(OutputDirKey, out string outputPath))
                 {
                     logFile.WriteLine("Missing key: " + OutputDirKey + " in MassSpecTrigger configuration file. Exiting.");
                     Environment.Exit(1);
                 }
-                SourceTrim = ConfigMap.TryGetValue(SourceTrimKey, out string sourceTrimPath) ? sourceTrimPath : DefaultSourceTrim;
-                bool.TryParse(ConfigMap.GetValueOrDefault(RemoveFilesKey, DefaultRemoveFiles.ToString()), out RemoveFiles);
-                bool.TryParse(ConfigMap.GetValueOrDefault(RemoveDirectoriesKey, DefaultRemoveDirectories.ToString()), out RemoveDirectories);
-                bool.TryParse(ConfigMap.GetValueOrDefault(UpdateFilesKey, DefaultUpdateFiles.ToString()), out UpdateFiles);
-                int.TryParse(ConfigMap.GetValueOrDefault(MinRawFileSizeKey, MinRawFileSize.ToString()), out int configMinRawFileSize);
-                int minRawFileSize = configMinRawFileSize > 0 ? configMinRawFileSize : MinRawFileSize;
                 // END SETUP
 
                 // BEG SLD / Check acquired raw
