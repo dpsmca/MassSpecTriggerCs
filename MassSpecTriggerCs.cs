@@ -196,14 +196,8 @@ namespace MassSpecTriggerCs
     {
         public string this[string key]
         {
-            get
-            {
-                return (string)base[key];
-            }
-            set
-            {
-                base[key] = value;
-            }
+            get => base[key].ToString();
+            set => base[key] = (string)value;
         }
     }  // StringOrderedDictionary
 
