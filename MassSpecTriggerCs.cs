@@ -643,7 +643,7 @@ namespace MassSpecTriggerCs
                 {
                     string destinationPath = ConstructDestinationPath(folderPath, outputPath, SourceTrim);
                     logFile.WriteLine($"{acquired} / {total} raw files acquired, beginning payload activity ...");
-                    if (!PrepareOutputDirectory(destinationPath, logFile, minRawFileSize, RawFilePattern))
+                    if (!PrepareOutputDirectory(destinationPath, logFile, MinRawFileSize, RawFilePattern))
                     {
                         logFile.WriteLine("Could not prepare destination: \"" + destinationPath + "\". Check this directory. Exiting.");
                         Environment.Exit(1);
