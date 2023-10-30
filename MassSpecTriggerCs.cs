@@ -335,9 +335,9 @@ namespace MassSpecTriggerCs
             return true;
         }
 
-        public static Dictionary<string, string> ReadConfigFile(string execPath, StreamWriter logFile)
+        public static StringOrderedDictionary ReadConfigFile(string execPath, StreamWriter logFile)
         {
-            var configMap = new Dictionary<string, string>();
+            var configMap = new StringOrderedDictionary();
             var execDir = Path.GetDirectoryName(execPath);
             var initialConfigFilename = Path.GetFileNameWithoutExtension(execPath) + ".cfg";
             var defaultConfigFilename = DefaultConfigFilename;
@@ -371,8 +371,35 @@ namespace MassSpecTriggerCs
                     }
                 }
             }
+
+            Console.WriteLine($"ConfigMap:\n{ShowDictionary(configMap)}\n\n");
             return configMap;
         }
+        
+        public static StringKeyDictionary ReadAndParseConfigFile(string execPath, StreamWriter logFile)
+        {
+            var configStringMap = ReadConfigFile(execPath, logFile); 
+            var configMap = new StringKeyDictionary();
+            foreach (DictionaryEntry de in configStringMap)
+            {
+                bool isNumber = int.TryParse((string)de.Value, out int intVal);
+                if (isNumber)
+                {
+                    configMap.Add(de.Key, intVal);
+                    continue;
+                }
+                bool isBoolean = bool.TryParse((string)de.Value, out bool boolVal);
+                if(isBoolean) {
+                    configMap.Add(de.Key, boolVal);
+                    continue;
+                }
+                configMap.Add(de.Key, (string)de.Value);
+            }
+            Console.WriteLine($"ConfigMap:\n{ShowDictionary(configMap)}\n\n");
+            return configMap;
+        }
+        
+        
 
         public static void CopyDirectory(string sourceDir, string destDir, bool updateFiles)
         {
