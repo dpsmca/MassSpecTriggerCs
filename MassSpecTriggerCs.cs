@@ -421,18 +421,20 @@ namespace MassSpecTriggerCs
             }
         }
 
-        public static void RecursiveRemoveFiles(string sourceDir)
+        public static void RecursiveRemoveFiles(string sourceDir, bool removeFiles = false, bool removeDirectories = false)
         {
             var sourceDirectory = new DirectoryInfo(sourceDir);
-            if (RemoveFiles == true)
+            var options = new EnumerationOptions();
+            options.RecurseSubdirectories = true;
+            if (removeFiles)
             {
-                foreach (var file in sourceDirectory.GetFiles())
+                foreach (var file in sourceDirectory.GetFiles("*", options))
                 {
                     file.Delete();
                 }
-                if (RemoveDirectories == true)
+                if (removeDirectories)
                 {
-                    foreach (var dir in sourceDirectory.GetDirectories())
+                    foreach (var dir in sourceDirectory.GetDirectories("*", SearchOption.AllDirectories))
                     {
                         dir.Delete();
                     }
