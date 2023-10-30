@@ -438,6 +438,8 @@ namespace MassSpecTriggerCs
                     {
                         dir.Delete();
                     }
+
+                    sourceDirectory.Delete();
                 }
             }
 
