@@ -650,7 +650,7 @@ namespace MassSpecTriggerCs
                     }
                     logFile.WriteLine("Copying directory: \"" + folderPath + "\" => \"" + destinationPath + "\"");
                     CopyDirectory(folderPath, destinationPath, UpdateFiles);
-                    RecursiveRemoveFiles(folderPath);
+                    RecursiveRemoveFiles(folderPath, RemoveFiles, RemoveDirectories);
                     // if (RemoveFiles)
                     // {
                     //     
