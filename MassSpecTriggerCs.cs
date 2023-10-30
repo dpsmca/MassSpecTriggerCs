@@ -421,21 +421,45 @@ namespace MassSpecTriggerCs
             }
         }
 
-        public static void RecursiveRemoveFiles(string sourceDir, bool removeFiles = false, bool removeDirectories = false)
+        public static void RecursiveRemoveFiles(string sourceDir, bool removeFiles = false, bool removeDirectories = false, StreamWriter logFile = null)
         {
             var sourceDirectory = new DirectoryInfo(sourceDir);
             var options = new EnumerationOptions();
             options.RecurseSubdirectories = true;
+            if (!(logFile is null))
+            {
+                if (removeFiles && removeDirectories)
+                {
+                    logFile.WriteLine($"Removing all files and directories from: {sourceDir}");
+                } else if (removeFiles)
+                {
+                    logFile.WriteLine($"Removing only files from: {sourceDir}");
+                }
+                else
+                {
+                    logFile.WriteLine($"\"{RemoveFilesKey}\" and \"{RemoveDirectoriesKey}\" are false, not removing anything from: {sourceDir}");
+                }
+            }
             if (removeFiles)
             {
                 foreach (var file in sourceDirectory.GetFiles("*", options))
                 {
+                    /* Uncomment for detailed logging of each file removed */
+                    // if (!(logFile is null))
+                    // {
+                    //     logFile.WriteLine($"Removing file: {file.FullName}");
+                    // }
                     file.Delete();
                 }
                 if (removeDirectories)
                 {
                     foreach (var dir in sourceDirectory.GetDirectories("*", SearchOption.AllDirectories))
                     {
+                        /* Uncomment for detailed logging of each directory removed */
+                        // if (!(logFile is null))
+                        // {
+                        //     logFile.WriteLine($"Removing directory: {dir.FullName}");
+                        // }
                         dir.Delete();
                     }
 
@@ -650,7 +674,7 @@ namespace MassSpecTriggerCs
                     }
                     logFile.WriteLine("Copying directory: \"" + folderPath + "\" => \"" + destinationPath + "\"");
                     CopyDirectory(folderPath, destinationPath, UpdateFiles);
-                    RecursiveRemoveFiles(folderPath, RemoveFiles, RemoveDirectories);
+                    RecursiveRemoveFiles(folderPath, RemoveFiles, RemoveDirectories, logFile);
                     // if (RemoveFiles)
                     // {
                     //     
