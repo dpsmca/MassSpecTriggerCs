@@ -230,6 +230,48 @@ namespace MassSpecTriggerCs
         // Trigger each raw file vars
         private const string RAW_FILES_ACQUIRED_BASE = "RawFilesAcquired.txt";
 
+        public static string ShowDictionary(StringOrderedDictionary dict)
+        {
+            string res = "";
+            if (dict is null)
+            {
+                res = "(null)";
+            }
+            else
+            {
+                foreach (DictionaryEntry de in dict)
+                {
+                    string val = (string)de.Value;
+                    if (string.IsNullOrEmpty(val))
+                    {
+                        val = "\"\"";
+                    }
+                    res += $"{de.Key} = {val}";
+                    res += "\n";
+                }
+            }
+            return res;
+        }
+
+        public static string ShowDictionary(StringKeyDictionary dict)
+        {
+            string res = "";
+            if (dict is null)
+            {
+                res = "(null)";
+            }
+            else
+            {
+                foreach (string key in dict.Keys)
+                {
+                    object val = dict[key];
+                    res += $"{key} = {val}\n";
+                }
+            }
+
+            return res;
+        }
+
         public static bool ContainsCaseInsensitiveSubstring(string str, string substr)
         {
             string strLower = str.ToLower();
