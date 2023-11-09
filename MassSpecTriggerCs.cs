@@ -44,13 +44,14 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.Xml;
+using System.Linq;
 using Color = System.Drawing.Color;
 using System.Collections.Specialized;
 using ThermoFisher.CommonCore.Data.Business;
 using ThermoFisher.CommonCore.Data.Interfaces;
 using ThermoFisher.CommonCore.RawFileReader;
-using System.Xml;
-using System.Linq;
+using CommandLine;
 using Pastel;
 
 /*
@@ -206,6 +207,21 @@ namespace MassSpecTriggerCs
         }
     }  // StringOrderedDictionary
 
+    public class Options
+    {
+        [Option('m', "mock", Required = false, HelpText = "Mock sequence: a semicolon-separated list of RAW files to stand in for the contents of an SLD file")]
+        public string MockSequence { get; set; }
+        
+        [Option('l', "logfile", Required = false, HelpText = "Full path to log file")]
+        public string Logfile { get; set; }
+        
+        [Option('d', "debug", Required = false, HelpText = "Enable debug output")]
+        public bool Debug { get; set; }
+        
+        [Value(0)]
+        public string InputRawFile { get; set; } 
+    }
+
     public static class MainClass
     {
         public const string TokenFile = "MSAComplete.txt";
@@ -253,7 +269,8 @@ namespace MassSpecTriggerCs
         private const string RAW_FILES_ACQUIRED_BASE = "RawFilesAcquired.txt";
         public static string SLD_FILE_PATH = "";
 
-        public static string ShowDictionary(StringOrderedDictionary dict)
+        public static bool MockSequenceMode = false;
+
         public static void log(string message)
         {
             var ts = Timestamp();
@@ -424,8 +441,6 @@ namespace MassSpecTriggerCs
                     }
                 }
             }
-
-            Console.WriteLine($"ConfigMap:\n{ShowDictionary(configMap)}\n\n");
             return configMap;
         }
         
@@ -481,14 +496,6 @@ namespace MassSpecTriggerCs
             {
                 if (removeFiles)
                 {
-                    logFile.WriteLine($"Removing all files and directories from: {sourceDir}");
-                } else if (removeFiles)
-                {
-                    logFile.WriteLine($"Removing only files from: {sourceDir}");
-                }
-                else
-                {
-                    logFile.WriteLine($"\"{RemoveFilesKey}\" and \"{RemoveDirectoriesKey}\" are false, not removing anything from: {sourceDir}");
                     if (preserveSld)
                     {
                         log($"Removing all non-SLD files but no subdirectories from: {sourceDir}");
@@ -580,6 +587,27 @@ namespace MassSpecTriggerCs
             return rawFilesAcquired;
         }  // SLDReadSamples()
 
+        private static StringOrderedDictionary MockSLDReadSamples(string rawFilesAcquiredPath, List<string> rawFilePaths)
+        {
+            StringOrderedDictionary rawFilesAcquired = readRawFilesAcquired(rawFilesAcquiredPath);
+            foreach (var filePath in rawFilePaths)
+            {
+                if (string.IsNullOrEmpty(filePath))
+                {
+                    continue;
+                }
+
+                string rawFileName = Path.GetFileName(filePath).ToLower();
+
+                /* If we are ignoring PostBlank files, check that this RAW file is not a PostBlank */
+                if (!(IgnorePostBlank && ContainsCaseInsensitiveSubstring(rawFileName, PostBlankMatches)))
+                {
+                    rawFilesAcquired[rawFileName] = "no"; // init all to unacquired
+                }
+            }
+            return rawFilesAcquired;
+        }
+
         private static bool UpdateRawFilesAcquiredDict(string rawFilePath, StringOrderedDictionary rawFilesAcquired)
         {
             var rawFileName = Path.GetFileName(rawFilePath);
@@ -658,7 +686,6 @@ namespace MassSpecTriggerCs
         private static int countRawFilesAcquired(string rawFilesAcquiredPath)
         {
             StringOrderedDictionary rawFilesAcquired = readRawFilesAcquired(rawFilesAcquiredPath);
-            int total = rawFilesAcquired.Count;
             int acquired = 0;
             foreach (var value in rawFilesAcquired.Values)
             {
@@ -673,14 +700,45 @@ namespace MassSpecTriggerCs
 
         public static void Main(string[] args)
         {
-            StreamWriter logFile = null;
-            if (args.Length < 1)
-            {
-                Console.WriteLine("Please pass in the current raw data file via %R from Xcalibur.");
-                Environment.Exit(1);
-            }
             string rawFileName = "";
             string logFilePath = "";
+            List<string> mockSequence = new List<string>();
+            // StreamWriter logFile = null;
+            Parser.Default.ParseArguments<Options>(args).WithParsed<Options>(o =>
+            {
+                if (o.Debug)
+                {
+                    DebugMode = true;
+                }
+
+                if (!string.IsNullOrEmpty(o.Logfile))
+                {
+                    logFilePath = o.Logfile;
+                }
+
+                if (string.IsNullOrEmpty(o.InputRawFile))
+                {
+                    logerr("Please pass in the full path to a RAW file (using %R parameter in Xcalibur)");
+                    Environment.Exit(1);
+                }
+                else
+                {
+                    rawFileName = o.InputRawFile;
+                }
+
+                if (!string.IsNullOrEmpty(o.MockSequence))
+                {
+                    var str = o.MockSequence;
+                    var splits = str.Split(";");
+                    mockSequence.AddRange(splits.Select(filepath => filepath.Trim()).Where(contents => !string.IsNullOrEmpty(contents)));
+                    MockSequenceMode = true;
+                }
+            });
+            // if (args.Length < 1)
+            // {
+            //     errlog("Please pass in the current raw data file via %R from Xcalibur.");
+            //     Environment.Exit(1);
+            // }
             try
             {
                 // BEG SETUP
@@ -750,28 +808,6 @@ namespace MassSpecTriggerCs
 
                 // BEG SLD / Check acquired raw
                 string sldPath = folderPath;
-                string[] sld_files = Directory.GetFiles(sldPath, "*.sld", SearchOption.TopDirectoryOnly)
-                    .Where(file => file.EndsWith(".sld", StringComparison.OrdinalIgnoreCase))
-                    .ToArray();
-                if (sld_files.Length != 1)
-                {
-                    Console.WriteLine($"Check {sldPath} for a single SLD file.");
-                    Environment.Exit(1);
-                }
-                string sldFile = sld_files[0];
-                Console.WriteLine($"Initial work based on SLD file: Check {sldFile}.");
-
-                string rawFilesAcquiredPath = sldPath + Path.DirectorySeparatorChar + RAW_FILES_ACQUIRED_BASE;
-                // All items in the dictionary are kept ion lower case to avoid dealing with case sensitive files and strings.
-                StringOrderedDictionary rawFilesAcquiredDict = new StringOrderedDictionary();
-                // only need to read the SLD the first time in dir.
-                if (!File.Exists(rawFilesAcquiredPath))
-                {
-                    rawFilesAcquiredDict = SLDReadSamples(sldFile);
-                }
-                else
-                {
-                    rawFilesAcquiredDict = readRawFilesAcquired(rawFilesAcquiredPath);
                 string searchPattern = SldStartsWith + "*";
                 string sldFile;
                 string rawFilesAcquiredPath = Path.Combine(sldPath, RAW_FILES_ACQUIRED_BASE);
@@ -781,6 +817,57 @@ namespace MassSpecTriggerCs
                 //     .ToArray();
                 // All items in the dictionary are kept in lower case to avoid dealing with case sensitive files and strings.
                 StringOrderedDictionary rawFilesAcquiredDict;
+                if (MockSequenceMode)
+                {
+                    log($"MOCK SEQUENCE MODE: mock sequence file contents are: [ {string.Join(", ", mockSequence)} ]");
+                    if (!File.Exists(rawFilesAcquiredPath))
+                    {
+                        logdbg($"Acquisition status file does not exist, creating: '{rawFilesAcquiredPath}'");
+                        rawFilesAcquiredDict = MockSLDReadSamples(rawFilesAcquiredPath, mockSequence);
+                    }
+                    else
+                    {
+                        logdbg($"Acquisition status file exists at: '{rawFilesAcquiredPath}'");
+                        rawFilesAcquiredDict = readRawFilesAcquired(rawFilesAcquiredPath);
+                    }
+
+                    sldFile = Path.Combine(sldPath, "MOCK_SLD_FILE.sld");
+                    SLD_FILE_PATH = sldFile;
+                    logdbg($"Acquisition status file: '{rawFilesAcquiredPath}'");
+                    logdbg($"Acquisition status file contents:\n{StringifyDictionary(rawFilesAcquiredDict)}'");
+                }
+                else
+                {
+                    string[] sld_files;
+                    var all_sld_files = Directory.GetFiles(sldPath, searchPattern, SearchOption.TopDirectoryOnly)
+                        .Where(file => file.EndsWith(".sld", StringComparison.OrdinalIgnoreCase));
+                    if (IgnorePostBlank)
+                    {
+                        sld_files = all_sld_files.Where(file => !ContainsCaseInsensitiveSubstring(file, PostBlankMatches)).ToArray();
+                    }
+                    else
+                    {
+                        sld_files = all_sld_files.ToArray();
+                    }
+                    if (sld_files.Length != 1)
+                    {
+                        logerr($"Problem finding SLD file: directory \"{sldPath}\" contains {sld_files.Length} matching SLD files ({SldStartsWith}*.sld), directory must contain a single matching SLD file.");
+                        Environment.Exit(1);
+                    }
+                    sldFile = sld_files[0];
+                    log($"Using SLD file: {sldFile}.");
+                    SLD_FILE_PATH = sldFile;
+                    // only need to read the SLD the first time in dir.
+                    if (!File.Exists(rawFilesAcquiredPath))
+                    {
+                        logdbg($"Acquisition status file does not exist, creating: '{rawFilesAcquiredPath}'");
+                        rawFilesAcquiredDict = SLDReadSamples(sldFile);
+                    }
+                    else
+                    {
+                        logdbg($"Acquisition status file exists at: '{rawFilesAcquiredPath}'");
+                        rawFilesAcquiredDict = readRawFilesAcquired(rawFilesAcquiredPath);
+                    }
                 }
                 logdbg($"Acquisition status file: '{rawFilesAcquiredPath}'");
                 if (rawFilesAcquiredDict.Count == 0)
