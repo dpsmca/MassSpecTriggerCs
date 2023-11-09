@@ -167,7 +167,6 @@ public class Tests
         sourcePath = @"D:\Transfer";
         stripPath = @"";
         expected = @"Z:\Transfer\Transfer";
-        Assert.AreEqual(expected, MassSpecTriggerCs.MainClass.ConstructDestinationPath(sourcePath, outputPath, stripPath));
         result = MainClass.ConstructDestinationPath(sourcePath, outputPath, stripPath);
         Assert.That(result, Is.EqualTo(expected));
 
