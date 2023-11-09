@@ -59,6 +59,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="OpenMcdf">
@@ -67,6 +68,7 @@
     <PackageReference Include="OpenMcdf.Extensions">
       <Version>2.3.0.1</Version>
     </PackageReference>
+    <PackageReference Include="Pastel" Version="4.2.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="6.0.0-preview.4.21253.7" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="System.IO" Version="4.3.0" />
