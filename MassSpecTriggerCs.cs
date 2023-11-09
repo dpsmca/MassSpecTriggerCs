@@ -39,7 +39,7 @@ formerly Robocopy command:  robocopy D:\Transfer "Z:\Transfer\" *.raw /min:<1000
 /XO : Exclude Older - if destination file already exists and is the same date or newer than the source, don�t overwrite it. [does not overwrite if exists]
 /MINAGE:.01 DAYS: MINimum file AGE - exclude files newer than n days/date. [NA]
 */
-// See https://aka.ms/new-console-template for more information
+
 using System;
 using System.IO;
 using System.Collections;
@@ -111,9 +111,9 @@ namespace MassSpecTriggerCs
         {
             foreach (DictionaryEntry entry in (IEnumerable)base.GetEnumerator())
             {
-                if (entry.Key is string && (entry.Value is int || entry.Value is bool || entry.Value is string))
+                if (entry.Key is string key)
                 {
-                    yield return new KeyValuePair<string, object>((string)entry.Key, entry.Value);
+                    yield return new KeyValuePair<string, object>(key, entry.Value);
                 }
                 else
                 {
