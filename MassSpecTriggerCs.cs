@@ -696,7 +696,7 @@ namespace MassSpecTriggerCs
                 }
             }
             return acquired;
-        }  // readRawFilesAcquired()
+        }  // countRawFilesAcquired()
 
         public static void Main(string[] args)
         {
