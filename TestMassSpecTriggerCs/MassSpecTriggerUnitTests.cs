@@ -170,6 +170,15 @@ public class Tests
         result = MainClass.ConstructDestinationPath(sourcePath, outputPath, stripPath);
         Assert.That(result, Is.EqualTo(expected));
 
+        sourcePath = @"C:\RawFiles\TestSearch001";
+        stripPath = @"Transfer";
+        expected = @"Z:\Transfer\RawFiles\TestSearch001";
+        result = MainClass.ConstructDestinationPath(sourcePath, outputPath, stripPath);
+        Assert.That(result, Is.EqualTo(expected));
+
+        result = MainClass.ConstructDestinationPath(sourcePath, outputPath, "");
+        Assert.That(result, Is.EqualTo(expected));
+
     }
 
     [Test]
