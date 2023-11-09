@@ -352,7 +352,7 @@ namespace MassSpecTriggerCs
 
         public static string ConstructDestinationPath(string sourceDir, string outputDir, string sourceTrimPath = "")
         {
-            string sourceStr = sourceDir.Replace(Path.GetPathRoot(sourceDir), "");
+            string sourceStr = sourceDir.Replace(Path.GetPathRoot(sourceDir) ?? string.Empty, "");
             int sourceTrimPos = -1;
             // Don't trim anything if sourceTrimPath is an empty string
             if (!string.IsNullOrEmpty(sourceTrimPath)) 
