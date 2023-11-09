@@ -1,7 +1,10 @@
 ﻿
-// TestMassSpecTrigger.cpp : Windows only exe to test Thermo Fisher Mass Spec. triggering.
-// Argument #1: the current raw data file %R from Thermo Fisher triggering.
-// Writes MSAComplete.txt in folder of raw data file.
+// MassSpecTrigger: Windows only exe to process RAW files from ThermoFisher mass spectrometers.
+// Argument #1: the current raw data file %R from Xcalibur "post-processing" dialog.
+// When all RAW files for a sequence have been produced, it will:
+// - Copy or move them to a destination folder
+// - Writes MSAComplete.txt in the destination folder
+// This currently relies on a single SLD file existing in the source folder.
 /* 
 Rules:
 Yes, patients do get re-processed in three scenarios:
