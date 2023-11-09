@@ -110,10 +110,15 @@ public class Tests
         {
             "Output_Directory=\"Z:\\Transfer\"",
             "Source_Trim=\"Transfer\"",
+            "SLD_Starts_With=\"Exploris\"",
+            "Ignore_PostBlank=true",
+            "PostBlank_Matches=\"PostBlank\"",
             "Remove_Files=false",
             "Remove_Directories=false",
+            "Preserve_SLD=true",
             "Overwrite_Older=true",
             "Min_Raw_Files_To_Move_Again=100000",
+            "Debug=false",
         };
         tempDir = GetTemporaryDirectory();
         Console.WriteLine($"Temp directory: \"{tempDir}\"");
