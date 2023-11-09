@@ -156,14 +156,21 @@ public class Tests
         var outputPath = @"Z:\Transfer";
         var stripPath = @"Transfer";
         var expected = @"Z:\Transfer\rawFiles\TestSearch001";
-        Assert.AreEqual(expected, MassSpecTriggerCs.MainClass.ConstructDestinationPath(sourcePath, outputPath, stripPath));
+        var result = MainClass.ConstructDestinationPath(sourcePath, outputPath, stripPath);
+        Assert.That(result, Is.EqualTo(expected));
+
         sourcePath = @"D:\Transfer";
         expected = @"Z:\Transfer";
-        Assert.AreEqual(expected, MassSpecTriggerCs.MainClass.ConstructDestinationPath(sourcePath, outputPath, stripPath));
+        result = MainClass.ConstructDestinationPath(sourcePath, outputPath, stripPath);
+        Assert.That(result, Is.EqualTo(expected));
+
         sourcePath = @"D:\Transfer";
         stripPath = @"";
         expected = @"Z:\Transfer\Transfer";
         Assert.AreEqual(expected, MassSpecTriggerCs.MainClass.ConstructDestinationPath(sourcePath, outputPath, stripPath));
+        result = MainClass.ConstructDestinationPath(sourcePath, outputPath, stripPath);
+        Assert.That(result, Is.EqualTo(expected));
+
     }
 
     [Test]
@@ -172,7 +179,7 @@ public class Tests
         var ts = MainClass.Timestamp();
         var expected = 19;
         var result = ts.Length;
-        Assert.AreEqual(expected, result);
+        Assert.That(result, Is.EqualTo(expected));
     }
 
     [Test]
@@ -182,11 +189,12 @@ public class Tests
         var expected = "10";
         newDict.Add("int_val", 10);
         var result = newDict["int_val"];
-        Assert.AreEqual(expected, result);
+        Assert.That(result, Is.EqualTo(expected));
+
         var expected2 = Boolean.FalseString;
         newDict.Add("bool_val", false);
         var result2 = newDict["bool_val"];
-        Assert.AreEqual(expected2, result2);
+        Assert.That(result2, Is.EqualTo(expected2));
     }
 
     [Test]
@@ -196,31 +204,32 @@ public class Tests
         var expected = 10;
         newDict.Add("int_val", expected);
         var result = newDict["int_val"];
-        Assert.AreEqual(expected, result);
+        Assert.That(result, Is.EqualTo(expected));
+        
         var expected2 = false;
         newDict.Add("bool_val", expected2);
         var result2 = newDict["bool_val"];
-        Assert.AreEqual(expected2, result2);
+        Assert.That(result2, Is.EqualTo(expected2));
+
         var expected3 = true;
         newDict.Add("bool_val2", expected3);
         var result3 = newDict["bool_val2"];
-        Assert.AreEqual(expected3, result3);
+        Assert.That(result3, Is.EqualTo(expected3));
     }
 
     [Test]
     public void TestReadConfigFile()
     {
-        var configDict = MainClass.ReadAndParseConfigFile(tempConfigFilePath, logFile);
-        Console.WriteLine($"ConfigDict:\n{MainClass.ShowDictionary(configDict)}");
+        var configDict = MainClass.ReadAndParseConfigFile(tempConfigFilePath);
         var expected = @"Z:\Transfer";
         var key = MainClass.OutputDirKey;
         var result = configDict[key];
-        Assert.AreEqual(expected, result);
+        Assert.That(result, Is.EqualTo(expected));
+
         var expected2 = false;
         key = "Remove_Files"; 
         result = configDict[key];
-        Assert.AreEqual(expected2, result);
-        // var expected = @"Z:\Transfer";
+        Assert.That(result, Is.EqualTo(expected2));
     }
 
     [Test]
@@ -250,15 +259,14 @@ public class Tests
     public void TestRecursiveRemoveFiles()
     {
         var newTempDir = GetTemporaryDirectory(tempDir);
-        Console.WriteLine($"New temp dir: {newTempDir}");
-        var dir1 = "test001";
-        var dir2 = "test001_subdir";
-        var dir3 = "test002";
-        OrderedDictionary tree = new OrderedDictionary();
+        const string dir1 = "test001";
+        const string dir2 = "test001_subdir";
+        const string dir3 = "test002";
+        var tree = new OrderedDictionary();
         tree.Add(dir1, new string[] { "testfile001_1.txt", "testfiles001_2.txt" });
         tree.Add(dir2, new string[] { "testfile001_sub1.txt", "testfiles001_sub2.txt" });
         tree.Add(dir3, new string[] { "testfiles002_1.txt", "testfiles002_2.txt", "testfiles002_3.txt" });
-        List<string> fullFilePaths = CreateTemporaryFileTree(newTempDir, tree);
+        var fullFilePaths = CreateTemporaryFileTree(newTempDir, tree);
 
         Assert.IsTrue(Directory.Exists(newTempDir));
         
@@ -300,7 +308,7 @@ public class Tests
         Assert.IsFalse(CheckAllExist(fullFilePaths));
         Assert.IsFalse(CheckAllExist(fullFilePaths, true));
         
-        /* Check directory itself */
+        /* Check base directory itself */
         Assert.IsFalse(Directory.Exists(newTempDir));
 
     }
