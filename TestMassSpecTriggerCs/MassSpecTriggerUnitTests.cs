@@ -140,15 +140,13 @@ public class Tests
         {
             logFile.Close();
         }
-        if (!string.IsNullOrEmpty(tempDir) && Directory.Exists(tempDir))
+        if (!string.IsNullOrEmpty(tempConfigFilePath) && File.Exists(tempConfigFilePath))
         {
-            Console.WriteLine($"Deleting directory: \"{tempDir}\"");
-            // Directory.Delete(tempDir, true);
+            File.Delete(tempConfigFilePath);
         }
-        // if (!string.IsNullOrEmpty(tempConfigFilePath) && File.Exists(tempConfigFilePath))
-        // {
-        //     File.Delete(tempConfigFilePath);
-        // }
+
+        if (string.IsNullOrEmpty(tempDir) || !Directory.Exists(tempDir)) return;
+        Directory.Delete(tempDir, true);
     }
 
     [Test]
