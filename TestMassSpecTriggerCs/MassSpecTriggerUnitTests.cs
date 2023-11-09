@@ -37,7 +37,14 @@ public class Tests
             {
                 Directory.CreateDirectory(dirpath);
             }
-            var filenames = (string[])entry.Value;
+
+            string[] filenames = { };
+            if (entry.Value is not null)
+            {
+                filenames = (string[])entry.Value;
+            }
+            // var filenames = (string[])entry.Value;
+            if (filenames == null) continue;
             foreach (var filename in filenames)
             {
                 var filepath = Path.Combine(dirpath, filename);
