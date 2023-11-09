@@ -44,12 +44,14 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using Color = System.Drawing.Color;
 using System.Collections.Specialized;
 using ThermoFisher.CommonCore.Data.Business;
 using ThermoFisher.CommonCore.Data.Interfaces;
 using ThermoFisher.CommonCore.RawFileReader;
 using System.Xml;
 using System.Linq;
+using Pastel;
 
 /*
  * Test data in subfolder test.
@@ -212,69 +214,110 @@ namespace MassSpecTriggerCs
         public const string RawFilePattern = ".raw";
         public const string OutputDirKey = "Output_Directory";
         public const string SourceTrimKey = "Source_Trim";
+        public const string SldStartsWithKey = "SLD_Starts_With";
+        public const string PostBlankMatchesKey = "PostBlank_Matches";
+        public const string IgnorePostBlankKey = "Ignore_PostBlank";
         public const string RemoveFilesKey = "Remove_Files";
         public const string RemoveDirectoriesKey = "Remove_Directories";
+        public const string PreserveSldKey = "Preserve_SLD";
         public const string UpdateFilesKey = "Overwrite_Older";
         public const string MinRawFileSizeKey = "Min_Raw_Files_To_Move_Again";
+        public const string DebugKey = "Debug";
         public const string TriggerLogFileStem = "mass_spec_trigger_log_file";
         public const string DefaultConfigFilename = "MassSpecTrigger.cfg";
         public const string TriggerLogFileExtension = "txt";
         public static string DefaultSourceTrim = "Transfer";
+        public static string DefaultSldStartsWith = "Exploris";
+        public static string DefaultPostBlankMatches = "PostBlank";
+        public static bool DefaultIgnorePostBlank = true;
         public static bool DefaultRemoveFiles = false;
         public static bool DefaultRemoveDirectories = false;
+        public static bool DefaultPreserveSld = true;
         public static bool DefaultUpdateFiles = false;
+        public static bool DefaultDebugging = false;
         public const int DefaultMinRawFileSize = 100000;
         public static string SourceTrim = DefaultSourceTrim;
+        public static string SldStartsWith = DefaultSldStartsWith;
+        public static string PostBlankMatches = DefaultPostBlankMatches;
+        public static bool IgnorePostBlank = DefaultIgnorePostBlank;
         public static bool RemoveFiles = DefaultRemoveFiles;
         public static bool RemoveDirectories = DefaultRemoveDirectories;
+        public static bool PreserveSld = DefaultPreserveSld;
         public static bool UpdateFiles = DefaultUpdateFiles;
+        public static bool DebugMode = DefaultDebugging;
         public static int MinRawFileSize = DefaultMinRawFileSize;
         public static StringKeyDictionary ConfigMap;
+
+        public static StreamWriter logFile;
         // Trigger each raw file vars
         private const string RAW_FILES_ACQUIRED_BASE = "RawFilesAcquired.txt";
+        public static string SLD_FILE_PATH = "";
 
         public static string ShowDictionary(StringOrderedDictionary dict)
+        public static void log(string message)
         {
-            string res = "";
+            var ts = Timestamp();
+            var msg = $"[ {ts} ] {message}";
+            if (logFile is not null)
+            {
+                logFile.WriteLine(msg);
+            }
+            msg = msg.Pastel(Color.Cyan);
+            /* Write to stderr in case we need to use output for something */
+            Console.Error.WriteLine(msg);
+        }
+
+        public static void logerr(string message)
+        {
+            var ts = Timestamp();
+            var line = $"[ {ts} ] [ERROR] {message}";
+            logFile?.WriteLine(line);
+            line = line.Pastel(Color.Red);
+            Console.Error.WriteLine(line);
+        }
+
+        public static void logwarn(string message)
+        {
+            var ts = Timestamp();
+            var line = $"[ {ts} ] [WARNING] {message}";
+            logFile?.WriteLine(line);
+            line = line.Pastel(Color.Yellow);
+            Console.Error.WriteLine(line);
+        }
+
+        public static void logdbg(string message)
+        {
+            var ts = Timestamp();
+            if (DebugMode)
+            {
+                var line = $"[ {ts} ] [DEBUG] {message}";
+                logFile?.WriteLine(line);
+                line = line.Pastel(Color.Magenta);
+                Console.Error.WriteLine(line);
+            }
+        }
+
+        public static string StringifyDictionary(StringOrderedDictionary dict)
+        {
+            string output = "";
             if (dict is null)
             {
-                res = "(null)";
+                output += "(null)\n";
+            }
+            else if (dict.Count == 0)
+            {
+                output += "(empty)\n";
             }
             else
             {
                 foreach (DictionaryEntry de in dict)
                 {
-                    string val = (string)de.Value;
-                    if (string.IsNullOrEmpty(val))
-                    {
-                        val = "\"\"";
-                    }
-                    res += $"{de.Key} = {val}";
-                    res += "\n";
+                    output += $"{de.Key}={de.Value}\n";
                 }
             }
-            return res;
+            return output.Trim();
         }
-
-        public static string ShowDictionary(StringKeyDictionary dict)
-        {
-            string res = "";
-            if (dict is null)
-            {
-                res = "(null)";
-            }
-            else
-            {
-                foreach (string key in dict.Keys)
-                {
-                    object val = dict[key];
-                    res += $"{key} = {val}\n";
-                }
-            }
-
-            return res;
-        }
-
+        
         public static bool ContainsCaseInsensitiveSubstring(string str, string substr)
         {
             string strLower = str.ToLower();
@@ -293,8 +336,8 @@ namespace MassSpecTriggerCs
         public static string ConstructDestinationPath(string sourceDir, string outputDir, string sourceTrimPath = "")
         {
             string sourceStr = sourceDir.Replace(Path.GetPathRoot(sourceDir), "");
-            // Don't trim anything if sourceTrimPath is an empty string
             int sourceTrimPos = -1;
+            // Don't trim anything if sourceTrimPath is an empty string
             if (!string.IsNullOrEmpty(sourceTrimPath)) 
             {
                 sourceTrimPos = sourceStr.IndexOf(sourceTrimPath, StringComparison.OrdinalIgnoreCase);
@@ -306,39 +349,46 @@ namespace MassSpecTriggerCs
             }
             else if (sourceTrimPos == 0 && sourceStr == sourceTrimPath)
             {
-                // If source path is identical to trim, just save directly in output directory 
+                // If source path is identical to sourceTrimPath, just save directly in output directory 
                 newOutputPath = outputDir;
             }
             else
             {
                 // If string matching contents of sourceTrimPath is found, adjust the substring start position.
                 // Add 1 to include the slash after the directory so it doesn't append as a root directory.
-                int startSubstrPos = (sourceTrimPos + sourceTrimPath.Length + 1);
-                string newRelativePath = sourceStr.Substring(startSubstrPos);
-                newOutputPath = Path.Combine(outputDir, newRelativePath);
+                if (sourceTrimPath != null)
+                {
+                    int startSubstrPos = (sourceTrimPos + sourceTrimPath.Length + 1);
+                    string newRelativePath = sourceStr.Substring(startSubstrPos);
+                    newOutputPath = Path.Combine(outputDir, newRelativePath);
+                }
             }
             return newOutputPath;
         }
 
-        public static bool PrepareOutputDirectory(string outputPath, StreamWriter logFile, int minRawFileSize, string filePattern)
+        public static bool PrepareOutputDirectory(string outputPath, int minRawFileSize, string filePattern)
         {
-            if (!Directory.Exists(outputPath))
+            if (!string.IsNullOrEmpty(outputPath))
             {
-                Directory.CreateDirectory(outputPath);
+                if (!Directory.Exists(outputPath))
+                {
+                    Directory.CreateDirectory(outputPath);
+                    return true;
+                }
+                var matchingFiles = Directory.GetFiles(outputPath, "*" + filePattern)
+                    .Where(filePath => new FileInfo(filePath).Length < minRawFileSize)
+                    .ToList();
+                if (matchingFiles.Count > 0)
+                {
+                    log("Found existing small raw files, previous copy may have been interrupted. Deleting " + outputPath);
+                    Directory.Delete(outputPath, true);
+                }
                 return true;
             }
-            var matchingFiles = Directory.GetFiles(outputPath, "*" + filePattern)
-                .Where(filePath => new FileInfo(filePath).Length < minRawFileSize)
-                .ToList();
-            if (matchingFiles.Count > 0)
-            {
-                logFile.WriteLine("Found existing small raw files. Deleting " + outputPath);
-                Directory.Delete(outputPath, true);
-            }
-            return true;
+            return false;
         }
 
-        public static StringOrderedDictionary ReadConfigFile(string execPath, StreamWriter logFile)
+        public static StringOrderedDictionary ReadConfigFile(string execPath)
         {
             var configMap = new StringOrderedDictionary();
             var execDir = Path.GetDirectoryName(execPath);
@@ -350,10 +400,10 @@ namespace MassSpecTriggerCs
             string configPath = configPaths.FirstOrDefault(File.Exists);
             if (configPath == null)
             {
-                logFile.WriteLine("Failed to open any configuration file after trying config file locations:");
+                log("Failed to open any configuration file after trying config file locations:");
                 foreach (var path in configPaths)
                 {
-                    logFile.WriteLine("  - \"" + Path.GetFullPath(path) + "\"");
+                    log("  - \"" + Path.GetFullPath(path) + "\"");
                 }
                 return configMap;
             }
@@ -379,9 +429,9 @@ namespace MassSpecTriggerCs
             return configMap;
         }
         
-        public static StringKeyDictionary ReadAndParseConfigFile(string execPath, StreamWriter logFile)
+        public static StringKeyDictionary ReadAndParseConfigFile(string execPath)
         {
-            var configStringMap = ReadConfigFile(execPath, logFile); 
+            var configStringMap = ReadConfigFile(execPath); 
             var configMap = new StringKeyDictionary();
             foreach (DictionaryEntry de in configStringMap)
             {
@@ -398,11 +448,8 @@ namespace MassSpecTriggerCs
                 }
                 configMap.Add(de.Key, (string)de.Value);
             }
-            Console.WriteLine($"ConfigMap:\n{ShowDictionary(configMap)}\n\n");
             return configMap;
         }
-        
-        
 
         public static void CopyDirectory(string sourceDir, string destDir, bool updateFiles)
         {
@@ -424,14 +471,15 @@ namespace MassSpecTriggerCs
             }
         }
 
-        public static void RecursiveRemoveFiles(string sourceDir, bool removeFiles = false, bool removeDirectories = false, StreamWriter logFile = null)
+        public static void RecursiveRemoveFiles(string sourceDir, bool removeFiles = false, bool removeDirectories = false, bool preserveSld = true, StreamWriter logFile = null)
         {
             var sourceDirectory = new DirectoryInfo(sourceDir);
-            var options = new EnumerationOptions();
-            options.RecurseSubdirectories = true;
-            if (!(logFile is null))
+            logFile ??= MainClass.logFile;
+            
+            /* (1): Before any removal actions, log what will generally be done */
+            if (logFile is not null)
             {
-                if (removeFiles && removeDirectories)
+                if (removeFiles)
                 {
                     logFile.WriteLine($"Removing all files and directories from: {sourceDir}");
                 } else if (removeFiles)
@@ -441,35 +489,56 @@ namespace MassSpecTriggerCs
                 else
                 {
                     logFile.WriteLine($"\"{RemoveFilesKey}\" and \"{RemoveDirectoriesKey}\" are false, not removing anything from: {sourceDir}");
+                    if (preserveSld)
+                    {
+                        log($"Removing all non-SLD files but no subdirectories from: {sourceDir}");
+                    } else if (removeDirectories)
+                    {
+                        log($"Removing all files and directories from: {sourceDir}");
+                    }
+                    else
+                    {
+                        log($"Removing only files from: ${sourceDir}");
+                    }
+                }
+                else
+                {
+                    log($"Not removing any files or subdirectories from: {sourceDir}");
                 }
             }
+            
+            /* (2): Perform removal actions according to provided parameters */
             if (removeFiles)
             {
-                foreach (var file in sourceDirectory.GetFiles("*", options))
+                var sourceDirectoryPath = sourceDirectory.FullName;
+                var filesToRemove = Directory.GetFiles(sourceDirectoryPath, "*", SearchOption.AllDirectories);
+                if (preserveSld)
                 {
-                    /* Uncomment for detailed logging of each file removed */
-                    // if (!(logFile is null))
-                    // {
-                    //     logFile.WriteLine($"Removing file: {file.FullName}");
-                    // }
-                    file.Delete();
+                    filesToRemove = filesToRemove.Where(file => !file.EndsWith(".sld", StringComparison.OrdinalIgnoreCase)).ToArray();
                 }
-                if (removeDirectories)
+                
+                foreach (var filePath in filesToRemove)
+                {
+                    var file = new FileInfo(filePath);
+                    logdbg($"Removing file: {file.FullName}");
+                    file.Delete();
+                    logdbg($"Removed file: {file.FullName}");
+                }
+
+                /* preserveSld overrides removing directories since we need to preserve the SLD files */
+                if (removeDirectories && !preserveSld)
                 {
                     foreach (var dir in sourceDirectory.GetDirectories("*", SearchOption.AllDirectories))
                     {
-                        /* Uncomment for detailed logging of each directory removed */
-                        // if (!(logFile is null))
-                        // {
-                        //     logFile.WriteLine($"Removing directory: {dir.FullName}");
-                        // }
+                        logdbg($"Removing directory: {dir.FullName}");
                         dir.Delete();
+                        logdbg($"Removed directory: {dir.FullName}");
                     }
-
+                    logdbg($"Removing base directory: {sourceDirectory.FullName}");
                     sourceDirectory.Delete();
+                    logdbg($"Removed base directory: {sourceDirectory.FullName}");
                 }
             }
-
         }
 
         // SLD / Keep track of acquired  logic starts here
@@ -481,7 +550,7 @@ namespace MassSpecTriggerCs
             var sldFile = SequenceFileReaderFactory.ReadFile(sldFilePath);
             if (sldFile is null || sldFile.IsError)
             {
-                Console.WriteLine($"Error opening the SLD file: {sldFilePath}, {sldFile.FileError.ErrorMessage}");
+                logerr($"Error opening the SLD file: {sldFilePath}, {sldFile?.FileError.ErrorMessage}");
                 return rawFilesAcquired;
             }
             if (!(sldFile is ISequenceFileAccess))
@@ -497,9 +566,15 @@ namespace MassSpecTriggerCs
                     continue;
                 }
                 // Sometimes a path sep and sometimes not
-                string rawFileName = sample.Path.TrimEnd('\\').ToLower() + Path.DirectorySeparatorChar
-                    + sample.RawFileName.ToLower() + ".raw";
-                rawFilesAcquired[rawFileName] = "no";  // init all to unacquired
+                // string rawFileName = sample.Path.TrimEnd('\\').ToLower() + Path.DirectorySeparatorChar + sample.RawFileName.ToLower() + ".raw";
+                // string rawFileName = Path.Combine(sample.Path.TrimEnd('\\').ToLower() + Path.DirectorySeparatorChar + sample.RawFileName.ToLower() + ".raw";
+                string rawFileName = sample.RawFileName.ToLower() + ".raw";
+
+                /* If we are ignoring PostBlank files, check that this RAW file is not a PostBlank */
+                if (!(IgnorePostBlank && ContainsCaseInsensitiveSubstring(rawFileName, PostBlankMatches)))
+                {
+                    rawFilesAcquired[rawFileName] = "no";  // init all to unacquired
+                }
             }
             // According to docs, the SLD file is not kept open., saw no dispose
             return rawFilesAcquired;
@@ -507,28 +582,33 @@ namespace MassSpecTriggerCs
 
         private static bool UpdateRawFilesAcquiredDict(string rawFilePath, StringOrderedDictionary rawFilesAcquired)
         {
-            if (rawFilesAcquired.Contains(rawFilePath.ToLower()))
+            var rawFileName = Path.GetFileName(rawFilePath);
+            if (IgnorePostBlank && ContainsCaseInsensitiveSubstring(rawFileName, PostBlankMatches))
             {
-                rawFilesAcquired[rawFilePath.ToLower()] = "yes";
+                log($"\"{rawFileName}\" appears to be a PostBlank file and will be ignored");
                 return true;
             }
-            else
+            if (rawFilesAcquired.Contains(rawFileName.ToLower()))
             {
-                Console.WriteLine($"{rawFilePath} is not in SLD file, please check triggered raw file and SLD file.");
-                return false;
+                logdbg($"Acquisition status file has record for RAW file, setting acquired status to yes");
+                rawFilesAcquired[rawFileName.ToLower()] = "yes";
+                return true;
             }
+            logerr($"Acquisition status file error: RAW file not found in SLD file: {rawFileName} error: RAW file not found in SLD file {SLD_FILE_PATH}");
+            return false;
         }  // UpdateRawFilesAcquiredDict()
 
         private static bool areAllRawFilesAcquired(StringOrderedDictionary rawFilesAcquired)
         {
+            logdbg($"{RAW_FILES_ACQUIRED_BASE} contents:\n{StringifyDictionary(rawFilesAcquired)}");
             foreach (DictionaryEntry entry in rawFilesAcquired)
             {
-                if (string.Equals(entry.Value.ToString(), "no", StringComparison.InvariantCulture))
+                if (string.Equals(entry.Value?.ToString(), "no", StringComparison.InvariantCulture))
                 {
                     return false;
                 }
             }
-            Console.WriteLine($"All raw files have been acquired.");
+            log($"All raw files have been acquired.");
             return true;
         }
 
@@ -549,20 +629,28 @@ namespace MassSpecTriggerCs
         private static StringOrderedDictionary readRawFilesAcquired(string rawFilesAcquiredPath)
         {
             StringOrderedDictionary rawFilesAcquired = new StringOrderedDictionary();
-            // Read the file and populate the OrderedDictionary
-            using (StreamReader reader = new StreamReader(rawFilesAcquiredPath))
+            if (File.Exists(rawFilesAcquiredPath))
             {
-                string line;
-                while ((line = reader.ReadLine()) != null)
+                logdbg($"Acquisition status file exists, reading values from: {rawFilesAcquiredPath}");
+                // Read the file and populate the OrderedDictionary
+                using (StreamReader reader = new StreamReader(rawFilesAcquiredPath))
                 {
-                    string[] parts = line.Split('=');
-                    if (parts.Length == 2)
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
                     {
-                        string key = parts[0];
-                        string value = parts[1];
-                        rawFilesAcquired.Add(key.ToLower(), value.ToLower());
+                        string[] parts = line.Split('=');
+                        if (parts.Length == 2)
+                        {
+                            string key = parts[0];
+                            string value = parts[1];
+                            rawFilesAcquired.Add(key.ToLower(), value.ToLower());
+                        }
                     }
                 }
+            }
+            else
+            {
+                logdbg($"Acquisition status file not found, will be initialized as empty: {rawFilesAcquiredPath}");
             }
             return rawFilesAcquired;
         }  // readRawFilesAcquired()
@@ -591,34 +679,72 @@ namespace MassSpecTriggerCs
                 Console.WriteLine("Please pass in the current raw data file via %R from Xcalibur.");
                 Environment.Exit(1);
             }
+            string rawFileName = "";
+            string logFilePath = "";
             try
             {
                 // BEG SETUP
-                string rawFileName = args[0];
+                // string rawFileName = args[0];
                 // Get the name of the current program (executable)
-                string logPath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+                var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+                string logPath = currentProcess.MainModule?.FileName;
                 string logFolderPath = Path.GetDirectoryName(logPath);
-                string logFilePath = Path.Combine(logFolderPath, TriggerLogFileStem + "." + TriggerLogFileExtension);
+                if (string.IsNullOrEmpty(logFilePath))
+                {
+                    logFilePath = Path.Combine(logFolderPath, TriggerLogFileStem + "." + TriggerLogFileExtension);
+                }
                 logFile = new StreamWriter(logFilePath, true);
                 logFile.AutoFlush = true;
-                logFile.WriteLine("COMMAND: " + string.Join(" ", args));
+
+                var exePath = currentProcess.MainModule?.FileName;
+                log("");
+                log("=============================================");
+                log($"COMMAND: {exePath} {string.Join(" ", args)}");
                 string rawFilePath = Path.GetFullPath(rawFileName);
+                string rawFileBaseName = Path.GetFileName(rawFilePath);
                 if (!File.Exists(rawFilePath))
                 {
-                    logFile.WriteLine("Raw file: " + rawFileName + " does not exist. Exiting.");
+                    logerr($"{rawFileName} error: RAW file does not exist. Exiting.");
                     Environment.Exit(1);
                 }
                 string folderPath = Path.GetDirectoryName(rawFilePath);
-                ConfigMap = ReadAndParseConfigFile(logPath, logFile);
+                ConfigMap = ReadAndParseConfigFile(logPath);
                 SourceTrim = ConfigMap.TryGetValue(SourceTrimKey, out string sourceTrimPath) ? sourceTrimPath : DefaultSourceTrim;
+                SldStartsWith = ConfigMap.TryGetValue(SldStartsWithKey, out string sldStartsWith) ? sldStartsWith : DefaultSldStartsWith;
+                IgnorePostBlank = ConfigMap.GetValueOrDefault(IgnorePostBlankKey, DefaultIgnorePostBlank);
+                PostBlankMatches = ConfigMap.TryGetValue(PostBlankMatchesKey, out string postBlankMatches) ? postBlankMatches : DefaultPostBlankMatches;
                 RemoveFiles = ConfigMap.GetValueOrDefault(RemoveFilesKey, DefaultRemoveFiles);
                 RemoveDirectories = ConfigMap.GetValueOrDefault(RemoveDirectoriesKey, DefaultRemoveDirectories);
+                PreserveSld = ConfigMap.GetValueOrDefault(PreserveSldKey, DefaultPreserveSld);
                 UpdateFiles = ConfigMap.GetValueOrDefault(UpdateFilesKey, DefaultUpdateFiles);
+                bool tempDebug = ConfigMap.GetValueOrDefault(DebugKey, DefaultDebugging);
+                DebugMode = DebugMode ? DebugMode : tempDebug;
                 MinRawFileSize = ConfigMap.GetValueOrDefault(MinRawFileSizeKey, DefaultMinRawFileSize);
                 if (!ConfigMap.TryGetValue(OutputDirKey, out string outputPath))
                 {
-                    logFile.WriteLine("Missing key: " + OutputDirKey + " in MassSpecTrigger configuration file. Exiting.");
+                    logerr("Missing key \"" + OutputDirKey + "\" in MassSpecTrigger configuration file. Exiting.");
                     Environment.Exit(1);
+                }
+
+                if (string.IsNullOrEmpty(SldStartsWith))
+                {
+                    logwarn($"Config key \"{SldStartsWithKey}\" not set, using default value: \"{DefaultSldStartsWith}\"");
+                    SldStartsWith = DefaultSldStartsWith;
+                }
+
+                if (IgnorePostBlank)
+                {
+                    log($"PostBlank files will be ignored for this sequence");
+                    log($"Any RAW file in this sequence with \"{PostBlankMatches}\" in its name will be ignored");
+                    if (ContainsCaseInsensitiveSubstring(rawFileName, PostBlankMatches))
+                    {
+                        log($"POSTBLANK: Provided RAW file '{rawFileBaseName}' is a PostBlank and will be ignored. Exiting.");
+                        Environment.Exit(0);
+                    }
+                }
+                else
+                {
+                    logwarn($"PostBlank files will not be ignored. This will cause an error if the PostBlank file is saved in a different directory");
                 }
                 // END SETUP
 
@@ -646,10 +772,20 @@ namespace MassSpecTriggerCs
                 else
                 {
                     rawFilesAcquiredDict = readRawFilesAcquired(rawFilesAcquiredPath);
+                string searchPattern = SldStartsWith + "*";
+                string sldFile;
+                string rawFilesAcquiredPath = Path.Combine(sldPath, RAW_FILES_ACQUIRED_BASE);
+
+                // string[] sld_files = Directory.GetFiles(sldPath, searchPattern, SearchOption.TopDirectoryOnly)
+                //     .Where(file => file.EndsWith(".sld", StringComparison.OrdinalIgnoreCase))
+                //     .ToArray();
+                // All items in the dictionary are kept in lower case to avoid dealing with case sensitive files and strings.
+                StringOrderedDictionary rawFilesAcquiredDict;
                 }
+                logdbg($"Acquisition status file: '{rawFilesAcquiredPath}'");
                 if (rawFilesAcquiredDict.Count == 0)
                 {
-                    Console.WriteLine($"The raw files acquired internal dictionary is empty. Check {sldFile} and {rawFilesAcquiredPath}");
+                    logerr($"Acquisition status internal dictionary is empty. Check {sldFile} and {rawFilesAcquiredPath}");
                     Environment.Exit(1);
                 }
 
@@ -657,7 +793,7 @@ namespace MassSpecTriggerCs
                 {
                     Environment.Exit(1);
                 }
-                Console.WriteLine($"Updated {rawFileName} for acquisition state.");
+                log($"Updated acquisition status for RAW file {rawFileName}");
                 writeRawFilesAcquired(rawFilesAcquiredPath, rawFilesAcquiredDict);
                 // END SLD / Check acquired raw
 
@@ -669,24 +805,24 @@ namespace MassSpecTriggerCs
                 if (areAllRawFilesAcquired(rawFilesAcquiredDict))
                 {
                     string destinationPath = ConstructDestinationPath(folderPath, outputPath, SourceTrim);
-                    logFile.WriteLine($"{acquired} / {total} raw files acquired, beginning payload activity ...");
-                    if (!PrepareOutputDirectory(destinationPath, logFile, MinRawFileSize, RawFilePattern))
+                    log($"{acquired}/{total} raw files acquired, beginning payload activity ...");
+                    if (!PrepareOutputDirectory(destinationPath, MinRawFileSize, RawFilePattern))
                     {
-                        logFile.WriteLine("Could not prepare destination: \"" + destinationPath + "\". Check this directory. Exiting.");
+                        logerr("Could not prepare destination: \"" + destinationPath + "\". Check this directory. Exiting.");
                         Environment.Exit(1);
                     }
-                    logFile.WriteLine("Copying directory: \"" + folderPath + "\" => \"" + destinationPath + "\"");
+                    log("Copying directory: \"" + folderPath + "\" => \"" + destinationPath + "\"");
                     CopyDirectory(folderPath, destinationPath, UpdateFiles);
-                    RecursiveRemoveFiles(folderPath, RemoveFiles, RemoveDirectories, logFile);
+                    RecursiveRemoveFiles(folderPath, RemoveFiles, RemoveDirectories, PreserveSld, logFile);
                     // if (RemoveFiles)
                     // {
                     //     
-                    //     logFile.WriteLine("Removing source directory: \"" + folderPath + "\"");
+                    //     log("Removing source directory: \"" + folderPath + "\"");
                     //     Directory.Delete(folderPath, true);
                     // }
                     // else
                     // {
-                    //     logFile.WriteLine("Config value '" + RemoveFilesKey + "' is not true, not deleting source directory");
+                    //     log("Config value '" + RemoveFilesKey + "' is not true, not deleting source directory");
                     // }
                     // END MOVE FOLDER
                     
@@ -706,18 +842,18 @@ namespace MassSpecTriggerCs
                         msaFile.WriteLine(ssRawFile);
                         msaFile.WriteLine(ssRepeat);
                     }
-                    logFile.WriteLine("Wrote file: " + msaFilePath);
+                    log("Wrote trigger file: " + msaFilePath);
                     Environment.Exit(0);
                 }
                 else
                 {
-                    logFile.WriteLine($"{acquired} / {total} raw files acquired, not performing payload activities yet");
+                    log($"{acquired}/{total} raw files acquired, not performing payload activities yet");
                 }
                 // END WRITE MSA
             }  // try
             catch (Exception ex)
             {
-                logFile.WriteLine("Error: " + ex.Message);
+                logerr("Error: " + ex.Message);
             }
             finally
             {
