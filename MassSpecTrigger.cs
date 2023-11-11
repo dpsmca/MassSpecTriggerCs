@@ -58,6 +58,7 @@ using System.Xml;
 using System.Linq;
 using Color = System.Drawing.Color;
 using System.Collections.Specialized;
+using System.Reflection;
 using ThermoFisher.CommonCore.Data.Business;
 using ThermoFisher.CommonCore.Data.Interfaces;
 using ThermoFisher.CommonCore.RawFileReader;
@@ -214,23 +215,10 @@ namespace MassSpecTrigger
         }
     }  // StringOrderedDictionary
 
-    public class Options
-    {
-        [Option('m', "mock", Required = false, HelpText = "Mock sequence: a semicolon-separated list of RAW files to stand in for the contents of an SLD file")]
-        public string MockSequence { get; set; }
-        
-        [Option('l', "logfile", Required = false, HelpText = "Full path to log file")]
-        public string Logfile { get; set; }
-        
-        [Option('d', "debug", Required = false, HelpText = "Enable debug output")]
-        public bool Debug { get; set; }
-        
-        [Value(0)]
-        public string InputRawFile { get; set; } 
-    }
-
     public static class MainClass
     {
+        public static string AppName = Assembly.GetExecutingAssembly().GetName().Name;
+        public static string AppVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(); 
         public const string TokenFile = "MSAComplete.txt";
         public const string RepeatString = "_RPT";
         public const string LinuxEndl = "\n";
