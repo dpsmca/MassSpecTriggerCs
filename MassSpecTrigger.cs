@@ -62,26 +62,26 @@ using ThermoFisher.CommonCore.Data.Business;
 using ThermoFisher.CommonCore.Data.Interfaces;
 using ThermoFisher.CommonCore.RawFileReader;
 using CommandLine;
+using CommandLine.Text;
 using Pastel;
 
-/*
- * Test data in subfolder test.
-"D:\\Amyloid_Standards\\2023\\AmyloidStandard10_20231010_Ex1_PostBlanks_NewTrigger\\AmyloidStandard10_20231010_Ex1_27min_PostBlank2.raw",
-"D:\\Amyloid_Standards\\2023\\AmyloidStandard10_20231010_Ex1_PostBlanks_NewTrigger\\AmyloidStandard10_20231010_Ex1_27min_PostBlank3.raw",
-"D:\\Amyloid_Standards\\2023\\AmyloidStandard10_20231010_Ex1_PostBlanks_NewTrigger\\AmyloidStandard10_20231010_Ex1_27min_PostBlank4.raw",
-"D:\\Amyloid_Standards\\2023\\AmyloidStandard10_20231010_Ex1_PostBlanks_NewTrigger\\AmyloidStandard10_20231010_Ex1_27min_PostBlank5.raw",
-"D:\\Amyloid_Standards\\2023\\AmyloidStandard10_20231010_Ex1_PostBlanks_NewTrigger\\AmyloidStandard10_20231010_Ex1_27min_PostBlank6.raw",
-"D:\\Amyloid_Standards\\2023\\AmyloidStandard10_20231010_Ex1_PostBlanks_NewTrigger\\AmyloidStandard10_20231010_Ex1_27min_PostBlank7.raw",
-"D:\\Amyloid_Standards\\2023\\AmyloidStandard10_20231010_Ex1_PostBlanks_NewTrigger\\AmyloidStandard10_20231010_Ex1_27min_PostBlank8.raw"
-
-"C:\\Xcalibur\\Data\\SWG_serum_100512053549.raw",
-"C:\\Xcalibur\\Data\\SWG_serum_100512094915.raw"
-
-"D:\\Data\\GFB\\matt\\08112011\\PBS_IP_IKBalpha_SMTA.raw"
-*/
-
-namespace MassSpecTriggerCs
+namespace MassSpecTrigger
 {
+    public class Options
+    {
+        [Option('m', "mock", Required = false, MetaValue = "\"file1.raw;file2.raw;...\"", HelpText = "Mock sequence: a semicolon-separated list of RAW files (complete path) which will stand in for the contents of an SLD file")]
+        public string MockSequence { get; set; }
+
+        [Option('l', "logfile", Required = false, MetaValue = "\"logfile\"", HelpText = "Complete path to log file")]
+        public string Logfile { get; set; }
+
+        [Option('d', "debug", Required = false, HelpText = "Enable debug output")]
+        public bool Debug { get; set; }
+
+        [Value(0, MetaName = "\"file_path.raw\"", HelpText = "RAW file (complete path)")]
+        public string InputRawFile { get; set; } 
+    }
+
     // to avoid most casting
     public class StringKeyDictionary : OrderedDictionary, IEnumerable<KeyValuePair<string, object>>
     {
