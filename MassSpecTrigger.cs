@@ -260,11 +260,16 @@ namespace MassSpecTrigger
         public static StringKeyDictionary ConfigMap;
 
         public static StreamWriter logFile;
-        // Trigger each raw file vars
+        public static bool MockSequenceMode = false;
+
         private const string RAW_FILES_ACQUIRED_BASE = "RawFilesAcquired.txt";
         public static string SLD_FILE_PATH = "";
+        public static string rawFileName = "";
+        public static string logFilePath = "";
+        public static List<string> mockSequence = new List<string>();
 
-        public static bool MockSequenceMode = false;
+        public static Parser parser;
+        public static ParserResult<Options> parserResult;
 
         public static void log(string message)
         {
@@ -695,9 +700,9 @@ namespace MassSpecTrigger
 
         public static void Main(string[] args)
         {
-            string rawFileName = "";
-            string logFilePath = "";
-            List<string> mockSequence = new List<string>();
+            rawFileName = "";
+            logFilePath = "";
+            mockSequence = new List<string>();
             // StreamWriter logFile = null;
             Parser.Default.ParseArguments<Options>(args).WithParsed<Options>(o =>
             {
