@@ -12,7 +12,7 @@ public class MassSpecTriggerTests
     private static string tempConfigFilePath;
     private static StreamWriter logFile;
 
-    public string GetTemporaryDirectory(string baseDirectoryPath = "")
+    public static string GetTemporaryDirectory(string baseDirectoryPath = "")
     {
         string tempDirectory = Path.GetTempPath();
         if (!string.IsNullOrEmpty(baseDirectoryPath) && Directory.Exists(baseDirectoryPath))
@@ -27,7 +27,7 @@ public class MassSpecTriggerTests
        return tempDirectory;
     }
 
-    public List<string> CreateTemporaryFileTree(string baseDirectory, OrderedDictionary directoriesAndFiles)
+    public static List<string> CreateTemporaryFileTree(string baseDirectory, OrderedDictionary directoriesAndFiles)
     {
         List<string> fullFilePaths = new List<string>();
         foreach (DictionaryEntry entry in directoriesAndFiles)
@@ -59,7 +59,7 @@ public class MassSpecTriggerTests
         return fullFilePaths;
     }
 
-    public bool CheckAllExist(List<string> filePaths, bool checkDirsOnly = false)
+    public static bool CheckAllExist(List<string> filePaths, bool checkDirsOnly = false)
     {
         bool result = true;
         foreach (var filepath in filePaths)
@@ -82,7 +82,6 @@ public class MassSpecTriggerTests
                 }
             }
         }
-
         return result;
     }
 
