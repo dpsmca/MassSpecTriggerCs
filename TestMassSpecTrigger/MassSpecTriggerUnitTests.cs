@@ -86,6 +86,7 @@ public class MassSpecTriggerTests
     }
 
     public bool CheckFileSizeIs(string filePath, int size)
+    public static bool CheckFileSizeIs(string filePath, int size)
     {
         var result = false;
         if (!File.Exists(filePath))
@@ -98,6 +99,7 @@ public class MassSpecTriggerTests
     }
 
     public string GetLogFileName()
+    public static string GetLogFileName()
     {
         return MainClass.TriggerLogFileStem + "." + MainClass.TriggerLogFileExtension;
     }
