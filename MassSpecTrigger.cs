@@ -491,32 +491,31 @@ namespace MassSpecTrigger
             }
         }
 
-        public static void RecursiveRemoveFiles(string sourceDir, bool removeFiles = false, bool removeDirectories = false, bool preserveSld = true, StreamWriter logFile = null)
+        public static void RecursiveRemoveFiles(string sourceDir, bool removeFiles = false, bool removeDirectories = false, bool preserveSld = true, StreamWriter logger = null)
         {
             var sourceDirectory = new DirectoryInfo(sourceDir);
-            logFile ??= MainClass.logFile;
+            /* Use default logFile if logger not provided */
+            logger ??= logFile;
             
             /* (1): Before any removal actions, log what will generally be done */
-            if (logFile is not null)
+            if (removeFiles)
             {
-                if (removeFiles)
+                if (preserveSld)
                 {
-                    if (preserveSld)
-                    {
-                        log($"Removing all non-SLD files but no subdirectories from: {sourceDir}");
-                    } else if (removeDirectories)
-                    {
-                        log($"Removing all files and directories from: {sourceDir}");
-                    }
-                    else
-                    {
-                        log($"Removing only files from: ${sourceDir}");
-                    }
+                    log($"Removing all non-SLD files but no subdirectories from: {sourceDir}", logger);
+                }
+                else if (removeDirectories)
+                {
+                    log($"Removing all files and directories from: {sourceDir}", logger);
                 }
                 else
                 {
-                    log($"Not removing any files or subdirectories from: {sourceDir}");
+                    log($"Removing only files from: ${sourceDir}", logger);
                 }
+            }
+            else
+            {
+                log($"Not removing any files or subdirectories from: {sourceDir}", logger);
             }
             
             /* (2): Perform removal actions according to provided parameters */
@@ -532,9 +531,9 @@ namespace MassSpecTrigger
                 foreach (var filePath in filesToRemove)
                 {
                     var file = new FileInfo(filePath);
-                    logdbg($"Removing file: {file.FullName}");
+                    logdbg($"Removing file: {file.FullName}", logger);
                     file.Delete();
-                    logdbg($"Removed file: {file.FullName}");
+                    logdbg($"Removed file: {file.FullName}", logger);
                 }
 
                 /* preserveSld overrides removing directories since we need to preserve the SLD files */
@@ -542,13 +541,13 @@ namespace MassSpecTrigger
                 {
                     foreach (var dir in sourceDirectory.GetDirectories("*", SearchOption.AllDirectories))
                     {
-                        logdbg($"Removing directory: {dir.FullName}");
+                        logdbg($"Removing directory: {dir.FullName}", logger);
                         dir.Delete();
-                        logdbg($"Removed directory: {dir.FullName}");
+                        logdbg($"Removed directory: {dir.FullName}", logger);
                     }
-                    logdbg($"Removing base directory: {sourceDirectory.FullName}");
+                    logdbg($"Removing base directory: {sourceDirectory.FullName}", logger);
                     sourceDirectory.Delete();
-                    logdbg($"Removed base directory: {sourceDirectory.FullName}");
+                    logdbg($"Removed base directory: {sourceDirectory.FullName}", logger);
                 }
             }
         }
