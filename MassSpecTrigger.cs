@@ -271,44 +271,49 @@ namespace MassSpecTrigger
         public static Parser parser;
         public static ParserResult<Options> parserResult;
 
-        public static void log(string message)
+        public static void log(string message, StreamWriter logger = null)
         {
+            /* Use default logFile if logger not provided */
+            logger ??= logFile;
             var ts = Timestamp();
             var msg = $"[ {ts} ] {message}";
-            if (logFile is not null)
-            {
-                logFile.WriteLine(msg);
-            }
+            logger?.WriteLine(msg);
             msg = msg.Pastel(Color.Cyan);
             /* Write to stderr in case we need to use output for something */
             Console.Error.WriteLine(msg);
         }
 
-        public static void logerr(string message)
+        public static void logerr(string message, StreamWriter logger = null)
         {
+            /* Use default logFile if logger not provided */
+            logger ??= logFile;
             var ts = Timestamp();
             var line = $"[ {ts} ] [ERROR] {message}";
-            logFile?.WriteLine(line);
+            logger?.WriteLine(line);
             line = line.Pastel(Color.Red);
             Console.Error.WriteLine(line);
         }
 
-        public static void logwarn(string message)
+        public static void logwarn(string message, StreamWriter logger = null)
         {
+            /* Use default logFile if logger not provided */
+            logger ??= logFile;
             var ts = Timestamp();
             var line = $"[ {ts} ] [WARNING] {message}";
-            logFile?.WriteLine(line);
+            logger?.WriteLine(line);
             line = line.Pastel(Color.Yellow);
             Console.Error.WriteLine(line);
         }
 
-        public static void logdbg(string message)
+        public static void logdbg(string message, StreamWriter logger = null)
         {
-            var ts = Timestamp();
+            /* Use default logFile if logger not provided */
+            logger ??= logFile;
             if (DebugMode)
             {
+                var ts = Timestamp();
                 var line = $"[ {ts} ] [DEBUG] {message}";
-                logFile?.WriteLine(line);
+                logger?.WriteLine(line);
                 line = line.Pastel(Color.Magenta);
                 Console.Error.WriteLine(line);
             }
