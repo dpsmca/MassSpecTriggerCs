@@ -1,0 +1,1 @@
+namespace MassSpecTrigger.TestMassSpecTrigger;

@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Specialized;
+using MassSpecTrigger;
+using NUnit.Framework;
 
-namespace TestMassSpecTriggerCs;
-using MassSpecTriggerCs;
+namespace TestMassSpecTrigger;
 
 public class Tests
 {
