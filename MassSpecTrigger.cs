@@ -203,9 +203,6 @@ namespace MassSpecTrigger
         {
             return (bool)GetValueOrDefault(key, (object)defaultValue);
         }
-    
-
-        // ... Add/override other necessary methods and properties as needed ...
     }  // StringKeyDictionary
 
     public class StringOrderedDictionary : OrderedDictionary
