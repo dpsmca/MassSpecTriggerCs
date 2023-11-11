@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace TestMassSpecTrigger;
 
-public class Tests
+public class MassSpecTriggerTests
 {
     private static string tempDir;
     private static string tempConfigFileName;
