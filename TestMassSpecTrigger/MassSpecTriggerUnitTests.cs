@@ -85,7 +85,32 @@ public class MassSpecTriggerTests
         return result;
     }
 
-    public bool CheckFileSizeIs(string filePath, int size)
+    public static bool CheckAnyExist(List<string> filePaths, bool checkDirsOnly = false)
+    {
+        bool result = false;
+        foreach (var filepath in filePaths)
+        {
+            if (checkDirsOnly)
+            {
+                var dir = Path.GetDirectoryName(filepath);
+                if (Directory.Exists(dir))
+                {
+                    result = true;
+                    break;
+                }
+            }
+            else
+            {
+                if (File.Exists(filepath))
+                {
+                    result = true;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
     public static bool CheckFileSizeIs(string filePath, int size)
     {
         var result = false;
@@ -98,7 +123,50 @@ public class MassSpecTriggerTests
         return fi.Length == size;
     }
 
-    public string GetLogFileName()
+    public static string GetDirectoryContents(string directoryPath)
+    {
+        var output = "";
+        if (Directory.Exists(directoryPath))
+        {
+            var files = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories);
+            if (files.Length == 0)
+            {
+                output += "(empty directory)";
+            }
+            else
+            {
+                foreach (var file in files)
+                {
+                    output += file + "\n";
+                }
+            }
+        }
+        else
+        {
+            output += "(directory does not exist)";
+        }
+
+        return output;
+    }
+
+    public static string StringifyList(List<string> list)
+    {
+        var output = "";
+        if (list is null)
+        {
+            output += "(null)";
+        } else if (list.Count == 0)
+        {
+            output += "(empty)";
+        }
+        else
+        {
+            output = list.Aggregate(output, (current, item) => current + (item + "\n"));
+        }
+
+        return output;
+    }
+
     public static string GetLogFileName()
     {
         return MainClass.TriggerLogFileStem + "." + MainClass.TriggerLogFileExtension;
