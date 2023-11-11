@@ -1,10 +1,20 @@
 ﻿
-// MassSpecTrigger: Windows only exe to process RAW files from ThermoFisher mass spectrometers.
-// Argument #1: the current raw data file %R from Xcalibur "post-processing" dialog.
-// When all RAW files for a sequence have been produced, it will:
-// - Copy or move them to a destination folder
-// - Writes MSAComplete.txt in the destination folder
-// This currently relies on a single SLD file existing in the source folder.
+/*
+ * MassSpecTrigger: Program to copy or move RAW files from ThermoFisher mass spectrometers.
+ * Intended to be used as part of an automation pipeline.
+ * Will be called from Xcalibur after each RAW file is created.
+ * In Xcalibur post-processing dialog, specify the complete path to the MassSpecTrigger
+ * executable, followed by the %R variable to supply the path to the new RAW file. The
+ * Xcalibur sequence (SLD) file should be created in the same directory as the RAW files
+ * and there should only be a single SLD file per directory.
+ * 
+ * When all RAW files for a sequence have been produced, it will:
+ * - Copy or move them to a destination folder (depending on config file)
+ * - Create a trigger file (MSAComplete.txt) in the destination folder
+ *
+ * Argument #1: the current RAW file (%R from Xcalibur post-processing dialog)
+ */
+
 /* 
 Rules:
 Yes, patients do get re-processed in three scenarios:
