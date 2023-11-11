@@ -346,17 +346,30 @@ public class MassSpecTriggerTests
         const string dir2 = "test001_subdir";
         const string dir3 = "test002";
         var tree = new OrderedDictionary();
-        tree.Add(dir1, new string[] { "testfile001_1.txt", "testfiles001_2.txt" });
-        tree.Add(dir2, new string[] { "testfile001_sub1.txt", "testfiles001_sub2.txt" });
-        tree.Add(dir3, new string[] { "testfiles002_1.txt", "testfiles002_2.txt", "testfiles002_3.txt" });
-        var fullFilePaths = CreateTemporaryFileTree(newTempDir, tree);
+        tree.Add(dir1, new string[] { "testfile001_1.raw", "testfile001_2.raw", "testfile001.sld" });
+        tree.Add(dir2, new string[] { "testfile001_sub1.raw", "testfile001_sub2.raw", "testfile001_sub.sld" });
+        tree.Add(dir3, new string[] { "testfile002_1.raw", "testfile002_2.raw", "testfile002_3.raw", "testfile002_PostBlank.raw", "testfile002.sld" });
+        var ci = StringComparison.OrdinalIgnoreCase;
+        var allFiles = CreateTemporaryFileTree(newTempDir, tree);
+        var sldFiles = allFiles.Where(file => file.EndsWith("sld", ci)).ToList();
+        var nonSldFiles = allFiles.Where(file => !file.EndsWith("sld", ci)).ToList();
+        var postBlankFiles = allFiles.Where(file => file.Contains("postblank", ci)).ToList();
+        var nonPostBlankFiles = allFiles.Where(file => !file.Contains("postblank", ci)).ToList();
+        var strSldFiles = StringifyList(sldFiles);
+        var strNonSldFiles = StringifyList(nonSldFiles);
+        var strPostBlankFiles = StringifyList(postBlankFiles);
+        var strNonPostBlankFiles = StringifyList(nonPostBlankFiles);
+        Console.WriteLine($"SLD FILES:\n{strSldFiles}\n\n");
+        Console.WriteLine($"NON-SLD FILES:\n{strNonSldFiles}\n\n");
+        Console.WriteLine($"POSTBLANK FILES:\n{strPostBlankFiles}\n\n");
+        Console.WriteLine($"NON-POSTBLANK FILES:\n{strNonPostBlankFiles}\n\n");
 
         Assert.IsTrue(Directory.Exists(newTempDir));
         
-        Assert.IsTrue(CheckAllExist(fullFilePaths, true));
-        Assert.IsTrue(CheckAllExist(fullFilePaths));
+        Assert.IsTrue(CheckAllExist(allFiles, true));
+        Assert.IsTrue(CheckAllExist(allFiles));
         var expectedSize = 21;
-        foreach (var filepath in fullFilePaths)
+        foreach (var filepath in allFiles)
         {
             Assert.IsTrue(CheckFileSizeIs(filepath, expectedSize));
         }
@@ -364,33 +377,53 @@ public class MassSpecTriggerTests
         /* Files and directories have been created correctly. Now test the method. */
         
         /* Remove nothing, everything should still exist and have the same size */
-        MainClass.RecursiveRemoveFiles(newTempDir, false, false);
-        Assert.IsTrue(CheckAllExist(fullFilePaths, true));
-        Assert.IsTrue(CheckAllExist(fullFilePaths));
-        foreach (var filepath in fullFilePaths)
+        MainClass.RecursiveRemoveFiles(newTempDir, false, false, true);
+        Assert.IsTrue(CheckAllExist(allFiles, true));
+        Assert.IsTrue(CheckAllExist(allFiles));
+        foreach (var filepath in allFiles)
         {
             Assert.IsTrue(CheckFileSizeIs(filepath, expectedSize));
         }
         
         /* "Remove directories" without "remove files" should also do nothing */
-        MainClass.RecursiveRemoveFiles(newTempDir, false, true);
-        Assert.IsTrue(CheckAllExist(fullFilePaths, true));
-        Assert.IsTrue(CheckAllExist(fullFilePaths));
-        foreach (var filepath in fullFilePaths)
+        MainClass.RecursiveRemoveFiles(newTempDir, false, true, true);
+        Assert.IsTrue(CheckAllExist(allFiles, true));
+        Assert.IsTrue(CheckAllExist(allFiles));
+        foreach (var filepath in allFiles)
         {
             Assert.IsTrue(CheckFileSizeIs(filepath, expectedSize));
         }
         
-        /* Remove files only, only directories should still exist */
-        MainClass.RecursiveRemoveFiles(newTempDir, true, false);
-        Assert.IsFalse(CheckAllExist(fullFilePaths));
-        Assert.IsTrue(CheckAllExist(fullFilePaths, true));
+        /* Remove non-SLD files only; only SLD files and directories should still exist */
+        MainClass.RecursiveRemoveFiles(newTempDir, true, false, true);
+        var files = GetDirectoryContents(newTempDir);
+        Console.WriteLine($"DIR: {newTempDir}\nFILES:\n{files}");
+        Console.WriteLine($"NON-SLD FILES:\n{sldFiles}");
+        Assert.IsFalse(CheckAllExist(allFiles));
+        Assert.IsFalse(CheckAnyExist(nonSldFiles));
+        Assert.IsTrue(CheckAllExist(sldFiles));
+        Assert.IsTrue(CheckAllExist(allFiles, true));
         
-        /* Remove directories too */
-        MainClass.RecursiveRemoveFiles(newTempDir, true, true);
-        Assert.IsFalse(CheckAllExist(fullFilePaths));
-        Assert.IsFalse(CheckAllExist(fullFilePaths, true));
-        
+        /* Even if removeDirectories is true, preserveSld should override it, and all SLD files and directories should still exist */
+        MainClass.RecursiveRemoveFiles(newTempDir, true, true, true);
+        Assert.IsFalse(CheckAllExist(allFiles));
+        Assert.IsFalse(CheckAnyExist(nonSldFiles));
+        Assert.IsTrue(CheckAllExist(sldFiles));
+        Assert.IsTrue(CheckAllExist(allFiles, true));
+
+        /* Remove all files, including SLD files, but no directories; only directories should still exist */
+        MainClass.RecursiveRemoveFiles(newTempDir, true, false, false);
+        Assert.IsFalse(CheckAllExist(allFiles));
+        Assert.IsFalse(CheckAnyExist(allFiles));
+        Assert.IsTrue(CheckAllExist(allFiles, true));
+
+        /* Remove all files and directories. No files or subdirectories should exist, and the base directory should not exist either */
+        MainClass.RecursiveRemoveFiles(newTempDir, true, true, false);
+        Assert.IsFalse(CheckAllExist(allFiles));
+        Assert.IsFalse(CheckAnyExist(allFiles));
+        Assert.IsFalse(CheckAllExist(allFiles, true));
+        Assert.IsFalse(CheckAnyExist(allFiles, true));
+
         /* Check base directory itself */
         Assert.IsFalse(Directory.Exists(newTempDir));
 
