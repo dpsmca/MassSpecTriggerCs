@@ -704,45 +704,62 @@ namespace MassSpecTrigger
             logFilePath = "";
             mockSequence = new List<string>();
             // StreamWriter logFile = null;
-            Parser.Default.ParseArguments<Options>(args).WithParsed<Options>(o =>
+            parser = new CommandLine.Parser(with => with.HelpWriter = null);
+            parserResult = parser.ParseArguments<Options>(args);
+            parserResult
+                .WithParsed<Options>(options => Run(options, args))
+                .WithNotParsed(errs => DisplayHelp(parserResult, errs));
+        } // Main()
+
+        public static void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errors)
+        {
+            var help = HelpText.RenderUsageText(result);
+            Console.WriteLine(help);
+            var helpText = HelpText.AutoBuild(result, h =>
             {
-                if (o.Debug)
-                {
-                    DebugMode = true;
-                }
+                h.AdditionalNewLineAfterOption = false;
+                h.MaximumDisplayWidth = 120;
+                h.Heading = $"{AppName} v{AppVersion}".Pastel(Color.Cyan);
+                h.Copyright = "Copyright 2023 Mayo Clinic";
+                return HelpText.DefaultParsingErrorsHandler(result, h);
+            }, e => e);
+            Console.Error.WriteLine(helpText);
+        } // DisplayHelp()
 
-                if (!string.IsNullOrEmpty(o.Logfile))
-                {
-                    logFilePath = o.Logfile;
-                }
+        public static void Run(Options options, string[] args)
+        {
+            if (options.Debug)
+            {
+                DebugMode = true;
+            }
 
-                if (string.IsNullOrEmpty(o.InputRawFile))
-                {
-                    logerr("Please pass in the full path to a RAW file (using %R parameter in Xcalibur)");
-                    Environment.Exit(1);
-                }
-                else
-                {
-                    rawFileName = o.InputRawFile;
-                }
+            if (!string.IsNullOrEmpty(options.Logfile))
+            {
+                logFilePath = options.Logfile;
+            }
 
-                if (!string.IsNullOrEmpty(o.MockSequence))
-                {
-                    var str = o.MockSequence;
-                    var splits = str.Split(";");
-                    mockSequence.AddRange(splits.Select(filepath => filepath.Trim()).Where(contents => !string.IsNullOrEmpty(contents)));
-                    MockSequenceMode = true;
-                }
-            });
-            // if (args.Length < 1)
-            // {
-            //     errlog("Please pass in the current raw data file via %R from Xcalibur.");
-            //     Environment.Exit(1);
-            // }
+            if (string.IsNullOrEmpty(options.InputRawFile))
+            {
+                logerr("Please pass in the full path to a RAW file (using %R parameter in Xcalibur)");
+                Environment.Exit(1);
+            }
+            else
+            {
+                rawFileName = options.InputRawFile;
+            }
+
+            if (!string.IsNullOrEmpty(options.MockSequence))
+            {
+                var str = options.MockSequence;
+                var splits = str.Split(";");
+                mockSequence.AddRange(splits.Select(filepath => filepath.Trim()).Where(contents => !string.IsNullOrEmpty(contents)));
+                MockSequenceMode = true;
+            }
+
             try
             {
                 // BEG SETUP
-                // string rawFileName = args[0];
+
                 // Get the name of the current program (executable)
                 var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
                 string logPath = currentProcess.MainModule?.FileName;
@@ -946,8 +963,9 @@ namespace MassSpecTrigger
             {
                 logFile?.Close();
             }
-        } // Main()
+
+        } // Run()
 
     }  // MainClass()
-}  // ns MassSpecTriggerCs
+}  // ns MassSpecTrigger
 
