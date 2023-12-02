@@ -6,6 +6,8 @@
     <LangVersion>10.0</LangVersion>
     <PublishUrl>publish\</PublishUrl>
     <PublishSingleFile>true</PublishSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
     <SelfContained>true</SelfContained>
     <DebugType>embedded</DebugType>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
