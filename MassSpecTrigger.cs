@@ -219,11 +219,11 @@ namespace MassSpecTrigger
     {
         public static string AppName = Assembly.GetExecutingAssembly().GetName().Name;
         public static string AppVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(); 
-        public const string TokenFile = "MSAComplete.txt";
-        public const string RepeatString = "_RPT";
         public const string LinuxEndl = "\n";
         public const string RawFilePattern = ".raw";
         public const string OutputDirKey = "Output_Directory";
+        public const string RepeatRunKey = "Repeat_Run_Matches";
+        public const string TokenFileKey = "Token_File";
         public const string SourceTrimKey = "Source_Trim";
         public const string SldStartsWithKey = "SLD_Starts_With";
         public const string PostBlankMatchesKey = "PostBlank_Matches";
@@ -238,6 +238,8 @@ namespace MassSpecTrigger
         public const string DefaultConfigFilename = "MassSpecTrigger.cfg";
         public const string TriggerLogFileExtension = "txt";
         public static string DefaultSourceTrim = "Transfer";
+        public static string DefaultRepeatRun = "_RPT";
+        public static string DefaultTokenFile = "MSAComplete.txt";
         public static string DefaultSldStartsWith = "Exploris";
         public static string DefaultPostBlankMatches = "PostBlank";
         public static bool DefaultIgnorePostBlank = true;
@@ -248,6 +250,8 @@ namespace MassSpecTrigger
         public static bool DefaultDebugging = false;
         public const int DefaultMinRawFileSize = 100000;
         public static string SourceTrim = DefaultSourceTrim;
+        public static string RepeatRun = DefaultRepeatRun;
+        public static string TokenFile = DefaultTokenFile;
         public static string SldStartsWith = DefaultSldStartsWith;
         public static string PostBlankMatches = DefaultPostBlankMatches;
         public static bool IgnorePostBlank = DefaultIgnorePostBlank;
@@ -788,6 +792,8 @@ namespace MassSpecTrigger
                 }
                 string folderPath = Path.GetDirectoryName(rawFilePath);
                 ConfigMap = ReadAndParseConfigFile(logPath);
+                RepeatRun = ConfigMap.TryGetValue(RepeatRunKey, out string repeatRun) ? repeatRun : DefaultRepeatRun;
+                TokenFile = ConfigMap.TryGetValue(TokenFileKey, out string tokenFile) ? tokenFile : DefaultTokenFile;
                 SourceTrim = ConfigMap.TryGetValue(SourceTrimKey, out string sourceTrimPath) ? sourceTrimPath : DefaultSourceTrim;
                 SldStartsWith = ConfigMap.TryGetValue(SldStartsWithKey, out string sldStartsWith) ? sldStartsWith : DefaultSldStartsWith;
                 IgnorePostBlank = ConfigMap.GetValueOrDefault(IgnorePostBlankKey, DefaultIgnorePostBlank);
@@ -815,7 +821,8 @@ namespace MassSpecTrigger
                 {
                     log($"PostBlank files will be ignored for this sequence");
                     log($"Any RAW file in this sequence with \"{PostBlankMatches}\" in its name will be ignored");
-                    if (ContainsCaseInsensitiveSubstring(rawFileName, PostBlankMatches))
+                    logdbg($"POSTBLANK: PostBlankMatches string is \"{PostBlankMatches}\" and raw file name is {rawFileBaseName}");
+                    if (ContainsCaseInsensitiveSubstring(rawFileBaseName, PostBlankMatches))
                     {
                         log($"POSTBLANK: Provided RAW file '{rawFileBaseName}' is a PostBlank and will be ignored. Exiting.");
                         Environment.Exit(0);
@@ -830,6 +837,7 @@ namespace MassSpecTrigger
                 // BEG SLD / Check acquired raw
                 string sldPath = folderPath;
                 string searchPattern = SldStartsWith + "*";
+                string sldExtension = "sld";
                 string sldFile;
                 string rawFilesAcquiredPath = Path.Combine(sldPath, RAW_FILES_ACQUIRED_BASE);
 
@@ -936,12 +944,12 @@ namespace MassSpecTrigger
                     
                     // write MSAComplete.txt to The Final Destination
                     string ssRawFile = "raw_file=\"" + rawFileName + "\"";
-                    string repeatRun = "false";
-                    if (ContainsCaseInsensitiveSubstring(destinationPath, RepeatString) || ContainsCaseInsensitiveSubstring(rawFileName, RepeatString))
+                    string isRepeatRun = "false";
+                    if (ContainsCaseInsensitiveSubstring(destinationPath, RepeatRun) || ContainsCaseInsensitiveSubstring(rawFileName, RepeatRun))
                     {
-                        repeatRun = "true";
+                        isRepeatRun = "true";
                     }
-                    string ssRepeat = "repeat_run=\"" + repeatRun + "\"";
+                    string ssRepeat = "repeat_run=\"" + isRepeatRun + "\"";
                     string msaFilePath = Path.Combine(destinationPath, TokenFile);
                     string ssDate = Timestamp();
                     using (StreamWriter msaFile = new StreamWriter(msaFilePath))
