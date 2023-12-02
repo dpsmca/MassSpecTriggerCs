@@ -9,7 +9,7 @@
     <PublishTrimmed>false</PublishTrimmed>
     <TrimMode>partial</TrimMode>
     <SelfContained>true</SelfContained>
-    <DebugType>embedded</DebugType>
+<!--    <DebugType>embedded</DebugType>-->
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
     <Install>true</Install>
