@@ -868,16 +868,21 @@ namespace MassSpecTrigger
                 else
                 {
                     string[] sld_files;
-                    var all_sld_files = Directory.GetFiles(sldPath, searchPattern, SearchOption.TopDirectoryOnly)
-                        .Where(file => file.EndsWith(".sld", StringComparison.OrdinalIgnoreCase));
-                    if (IgnorePostBlank)
-                    {
-                        sld_files = all_sld_files.Where(file => !ContainsCaseInsensitiveSubstring(file, PostBlankMatches)).ToArray();
-                    }
-                    else
-                    {
-                        sld_files = all_sld_files.ToArray();
-                    }
+                    logdbg($"SLD FILES: path is {sldPath}, search pattern is {searchPattern}, and SLD extension is {sldExtension}");
+                    var all_files = Directory.GetFiles(sldPath, searchPattern, SearchOption.TopDirectoryOnly);
+                    var all_sld_files = all_files.Where(file => file.EndsWith(sldExtension, StringComparison.OrdinalIgnoreCase));
+                    logdbg($"SLD FILES: directory \"{sldPath}\" contains files: [ {String.Join("; ", all_files)} ]");
+                    logdbg($"SLD FILES: files that end with '{sldExtension}': [ {String.Join("; ", all_sld_files)} ]");
+                    sld_files = all_sld_files.ToArray();
+                    // if (IgnorePostBlank)
+                    // {
+                    //     sld_files = all_sld_files.Where(file => !ContainsCaseInsensitiveSubstring(file, PostBlankMatches)).ToArray();
+                    // }
+                    // else
+                    // {
+                    //     sld_files = all_sld_files.ToArray();
+                    // }
+                    logdbg($"SLD FILES: directory \"{sldPath}\" contains {sld_files.Length} SLD files: [ {String.Join("; ", sld_files)} ]");
                     if (sld_files.Length != 1)
                     {
                         logerr($"Problem finding SLD file: directory \"{sldPath}\" contains {sld_files.Length} matching SLD files ({SldStartsWith}*.sld), directory must contain a single matching SLD file.");
